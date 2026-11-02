@@ -1,0 +1,120 @@
+<ion-header class="ion-no-border">
+  <ion-toolbar>
+    <div class="topbar">
+      <ion-buttons slot="start">
+        <ion-back-button defaultHref="/home" text="Back" aria-label="Back to monitor"></ion-back-button>
+      </ion-buttons>
+      <ion-title>Alert history</ion-title>
+    </div>
+  </ion-toolbar>
+</ion-header>
+
+<ion-content>
+  <main class="page-shell">
+    <section class="history-panel" aria-labelledby="history-heading">
+      <div class="history-heading">
+        <div>
+          <h1 id="history-heading">Alert history <span class="history-count">{{ visibleAlerts.length }}</span></h1>
+          <p>{{ newAlertCount }} new · {{ historyDate ? 'Selected date' : 'All dates' }} · Newest first</p>
+        </div>
+        <ion-button
+          fill="clear"
+          color="danger"
+          [disabled]="history.loadingHistory || (history.alerts.length === 0 && !history.storageError)"
+          (click)="confirmClearHistory()"
+          >Clear history</ion-button
+        >
+      </div>
+      <div class="date-filter">
+        <label for="history-date">Date</label>
+        <input id="history-date" type="date" [(ngModel)]="historyDate" />
+        <ion-button fill="outline" (click)="showToday()">Today</ion-button>
+        <ion-button fill="clear" (click)="historyDate = ''">All dates</ion-button>
+      </div>
+      <div class="history-filters" role="group" aria-label="Filter alert history">
+        <button
+          type="button"
+          [class.selected]="historyFilter === 'All'"
+          [attr.aria-pressed]="historyFilter === 'All'"
+          (click)="historyFilter = 'All'"
+        >
+          All alerts
+        </button>
+        <button
+          type="button"
+          [class.selected]="historyFilter === 'New'"
+          [attr.aria-pressed]="historyFilter === 'New'"
+          (click)="historyFilter = 'New'"
+        >
+          New
+        </button>
+        <button
+          type="button"
+          [class.selected]="historyFilter === 'Reviewed'"
+          [attr.aria-pressed]="historyFilter === 'Reviewed'"
+          (click)="historyFilter = 'Reviewed'"
+        >
+          Reviewed
+        </button>
+      </div>
+
+      @if (history.loadingHistory) {
+      <p class="empty-state" role="status">Loading saved alerts…</p>
+      } @else if (history.alerts.length === 0 && history.storageError) {
+      <div class="empty-state">
+        <h2>History could not be loaded</h2>
+        <p>Check the message below. Return to the monitor and reopen this page to try again.</p>
+      </div>
+      } @else if (history.alerts.length === 0) {
+      <div class="empty-state">
+        <ion-icon name="checkmark-circle-outline" aria-hidden="true"></ion-icon>
+        <h2>No alerts yet</h2>
+        <p>Return to the monitor to start the motion alarm or create a test alert.</p>
+        <a class="monitor-link" routerLink="/home">Go to monitor</a>
+      </div>
+      } @else if (visibleAlerts.length === 0) {
+      <div class="empty-state">
+        <h2>
+          @if (historyFilter === 'All') { No alerts for this date } @else { No {{ historyFilter.toLowerCase() }} alerts
+          }
+        </h2>
+        <p>Choose another date, All dates, or All alerts to see more history.</p>
+      </div>
+      } @else {
+      <div class="history-scroll" tabindex="0" role="region" aria-label="Scrollable alert history">
+        <ul class="alert-list">
+          @for (alert of visibleAlerts; track alert.id) {
+          <li class="alert-row">
+            <div class="alert-description">
+              <div class="alert-title">
+                <h2>{{ alert.source === 'Test' ? 'Test alert' : 'Phone movement detected' }}</h2>
+                <span class="alert-status" [class.reviewed]="alert.status === 'Reviewed'">{{ alert.status }}</span>
+              </div>
+              <p>{{ alert.createdAt | date:'MMM d, y · h:mm:ss a' }}</p>
+              @if (alert.strength !== null) {
+              <p class="alert-detail">Movement level: {{ alert.strength | number:'1.2-2' }} m/s²</p>
+              } @else {
+              <p class="alert-detail">Created manually for testing</p>
+              }
+            </div>
+            <div class="alert-actions">
+              <ion-button fill="outline" (click)="toggleStatus(alert)"
+                >{{ alert.status === 'New' ? 'Mark reviewed' : 'Mark new' }}</ion-button
+              >
+              <ion-button fill="clear" color="danger" (click)="confirmDelete(alert)">Delete</ion-button>
+            </div>
+          </li>
+          }
+        </ul>
+      </div>
+      }
+    </section>
+
+    @if (history.storageError) {
+    <p class="message error-message" role="alert">{{ history.storageError }}</p>
+    } @if (feedback) {
+    <p class="message feedback-message" role="status">{{ feedback }}</p>
+    }
+    <footer>Your alerts stay on this device. Clearing app or browser data removes them.</footer>
+  </main>
+</ion-content>

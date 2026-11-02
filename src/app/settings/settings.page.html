@@ -1,0 +1,70 @@
+<ion-header class="ion-no-border">
+  <ion-toolbar>
+    <div class="topbar">
+      <ion-buttons slot="start">
+        <ion-back-button defaultHref="/home" text="Back" aria-label="Back to monitor"></ion-back-button>
+      </ion-buttons>
+      <ion-title>Settings</ion-title>
+    </div>
+  </ion-toolbar>
+</ion-header>
+
+<ion-content>
+  <main class="page-shell">
+    <section class="settings-panel" aria-labelledby="settings-heading">
+      <h1 id="settings-heading">Settings</h1>
+      <p class="intro">Choose how MotionAlarm responds to movement.</p>
+      @if (!ready && !error) {
+      <p role="status">Loading monitoring settings…</p>
+      } @if (settings.state !== 'idle') {
+      <p class="active-note">Stop the motion alarm on the monitor page before changing settings.</p>
+      }
+      <div class="settings-grid">
+        <div class="setting sensitivity-setting">
+          <label for="sensitivity">Movement sensitivity</label>
+          <p id="sensitivity-help">Higher sensitivity catches smaller movements.</p>
+          <select
+            id="sensitivity"
+            [(ngModel)]="settings.threshold"
+            [disabled]="!ready || settings.state !== 'idle'"
+            aria-describedby="sensitivity-help"
+          >
+            <option [ngValue]="0.9">High · small movements</option>
+            <option [ngValue]="1.8">Balanced · everyday use</option>
+            <option [ngValue]="3.2">Low · larger movements</option>
+          </select>
+        </div>
+        <div class="setting">
+          <ion-toggle
+            [(ngModel)]="settings.vibrationEnabled"
+            [disabled]="!ready || settings.state !== 'idle'"
+            labelPlacement="start"
+            justify="space-between"
+            >Vibrate on alert</ion-toggle
+          >
+          <p>A one-second vibration on supported phones.</p>
+        </div>
+        <div class="setting">
+          <ion-toggle
+            [(ngModel)]="settings.soundEnabled"
+            [disabled]="!ready || settings.state !== 'idle'"
+            labelPlacement="start"
+            justify="space-between"
+            >Sound on alert</ion-toggle
+          >
+          <p>Rings until you stop the alarm. Test alerts play for two seconds.</p>
+        </div>
+      </div>
+      <p class="foreground-note">
+        @if (nativeAndroid) { Android keeps monitoring with a visible notification, including with the screen locked. To
+        stop, confirm your screen-lock PIN, pattern, or password in the app. Without a screen lock, stopping is
+        immediate. Background monitoring uses extra battery. Android or a force-stop can still end the service. } @else
+        { Browser preview: keep the page open and the screen awake. Install the Android APK for background monitoring
+        and screen-lock verification when stopping. }
+      </p>
+    </section>
+    @if (error) {
+    <p class="error-message" role="alert">{{ error }}</p>
+    }
+  </main>
+</ion-content>

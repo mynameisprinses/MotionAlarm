@@ -1,0 +1,144 @@
+<ion-header class="ion-no-border">
+  <ion-toolbar>
+    <div class="topbar">
+      <ion-title>MotionAlarm<span>Phone movement monitor</span></ion-title>
+      <span class="device-note">
+        <ion-icon name="phone-portrait-outline" aria-hidden="true"></ion-icon>
+        Stored on this device
+      </span>
+      <ion-button class="settings-button" fill="clear" routerLink="/settings" aria-label="Open settings">
+        <ion-icon slot="icon-only" name="settings-outline" aria-hidden="true"></ion-icon>
+      </ion-button>
+    </div>
+  </ion-toolbar>
+</ion-header>
+
+<ion-content>
+  <main class="page-shell">
+    <div class="page-heading">
+      <div>
+        <p class="eyebrow">A watchful phone starts here</p>
+        <h1>Set it down. Switch it on.</h1>
+        <p>Movement rings an alarm, vibrates, and saves an alert.</p>
+      </div>
+      <a class="history-link" routerLink="/alert-history">View alert history</a>
+    </div>
+
+    <div class="monitor-layout">
+      <section
+        class="monitor-panel"
+        [class.is-armed]="settings.state === 'armed'"
+        [class.is-alert]="settings.state === 'alert'"
+        aria-labelledby="monitor-heading"
+      >
+        <div class="panel-topline">
+          <h2 id="monitor-heading">Live monitor</h2>
+          <span class="state-label">
+            @if (settings.state === 'idle') { Sensor off } @if (settings.state === 'starting') { Connecting } @if
+            (settings.state === 'countdown') { Getting ready } @if (settings.state === 'armed') { Monitoring on } @if
+            (settings.state === 'alert') { Movement detected }
+          </span>
+        </div>
+
+        <div class="monitor-status" aria-live="polite" aria-atomic="true">
+          <div class="status-symbol" aria-hidden="true">
+            @if (settings.state === 'countdown') {
+            <span class="countdown-number">{{ countdown }}</span>
+            } @else if (settings.state === 'alert') {
+            <ion-icon name="warning-outline"></ion-icon>
+            } @else if (settings.state === 'armed') {
+            <ion-icon name="shield-checkmark-outline"></ion-icon>
+            } @else {
+            <ion-icon name="shield-outline"></ion-icon>
+            }
+          </div>
+          @if (settings.state === 'idle') {
+          <h3>Ready to keep watch</h3>
+          <p>Start the motion alarm, then place your phone on a still surface.</p>
+          } @else if (settings.state === 'starting') {
+          <h3>Connecting to your sensor</h3>
+          <p>
+            {{ nativeAndroid ? 'Allow notifications so the background monitor stays visible.' : 'Allow motion access if
+            your phone asks for permission.' }}
+          </p>
+          } @else if (settings.state === 'countdown') {
+          <h3>Place your phone down</h3>
+          <p>Monitoring starts when the countdown finishes.</p>
+          } @else if (settings.state === 'armed') {
+          <h3>Watching for movement</h3>
+          <p>
+            {{ nativeAndroid ? 'Monitoring continues in the background and with the screen locked.' : 'Keep this browser
+            open. Lifting or tilting can trigger an alert.' }}
+          </p>
+          } @else {
+          <h3>Your phone moved</h3>
+          <p>A movement alert was created. Use Motion alarm stop below to silence it.</p>
+          }
+        </div>
+
+        @if (settings.state === 'armed') {
+        <div class="movement-reading">
+          <span>Movement level</span>
+          <strong>{{ strength | number:'1.2-2' }} <span>m/s²</span></strong>
+          <meter min="0" [max]="settings.threshold" [value]="strength" aria-label="Movement level"></meter>
+        </div>
+        } @if (settings.state === 'idle') {
+        <ion-button
+          expand="block"
+          [disabled]="isDisarming || (nativeAndroid && !nativeReady)"
+          (click)="startMonitoring()"
+          >Motion alarm start</ion-button
+        >
+        } @else if (settings.state === 'starting') {
+        <ion-button expand="block" [disabled]="true">Connecting…</ion-button>
+        } @else if (settings.state === 'countdown' || settings.state === 'armed') {
+        <ion-button expand="block" fill="outline" [disabled]="isDisarming" (click)="stopMonitoring()"
+          >{{ isDisarming ? 'Verifying…' : 'Motion alarm stop' }}</ion-button
+        >
+        } @else {
+        <ion-button expand="block" color="danger" [disabled]="isDisarming" (click)="stopMonitoring()"
+          >{{ isDisarming ? 'Verifying…' : 'Motion alarm stop' }}</ion-button
+        >
+        }
+        <p class="monitor-footnote">5 seconds to set your phone down. One alert per session.</p>
+        @if (nativeAndroid) {
+        <p class="monitor-footnote">
+          Stopping asks for your screen-lock PIN, pattern, or password. With no screen lock, it stops immediately.
+        </p>
+        } @else {
+        <p class="monitor-footnote">Browser preview: screen-lock verification is available in the Android app.</p>
+        }
+      </section>
+
+      <section class="test-section" aria-labelledby="test-heading">
+        <h3 id="test-heading">Trying it on a computer?</h3>
+        <p>Create a labeled test alert to try the history controls. A motion sensor is not needed.</p>
+        <ion-button
+          fill="outline"
+          expand="block"
+          [disabled]="settings.state !== 'idle' || isDisarming"
+          (click)="createTestAlert()"
+          >Create test alert</ion-button
+        >
+        <p class="foreground-note">
+          @if (nativeAndroid) { Android keeps monitoring with a visible notification, including while the screen is
+          locked. This uses extra battery. Force-stopping the app or Android stopping its service ends monitoring. }
+          @else { Browser preview: keep this page open and the screen awake. Install the Android APK for background and
+          lock-screen monitoring. }
+        </p>
+      </section>
+    </div>
+
+    @if (sensorError) {
+    <p class="message error-message" role="alert">{{ sensorError }}</p>
+    } @if (disarmError) {
+    <p class="message error-message" role="alert">{{ disarmError }}</p>
+    } @if (history.storageError) {
+    <p class="message error-message" role="alert">{{ history.storageError }}</p>
+    } @if (feedback) {
+    <p class="message feedback-message" role="status">{{ feedback }}</p>
+    }
+
+    <footer>Your alerts stay on this device. Clearing app or browser data removes them.</footer>
+  </main>
+</ion-content>

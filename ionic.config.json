@@ -1,0 +1,7 @@
+{
+  "name": "MotionAlarm",
+  "integrations": {
+    "capacitor": {}
+  },
+  "type": "angular-standalone"
+}
