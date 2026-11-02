@@ -1,0 +1,155 @@
+name: Android APK
+
+on:
+  push:
+    branches: [master, main]
+  pull_request:
+    branches: [master, main]
+  workflow_dispatch:
+    inputs:
+      publish_release:
+        description: Publish a test release with an APK download and QR code
+        required: false
+        default: false
+        type: boolean
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}-${{ github.event_name }}
+  cancel-in-progress: ${{ github.event_name != 'workflow_dispatch' }}
+
+jobs:
+  build:
+    name: Build Android APK
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v7
+        with:
+          node-version: '24'
+          cache: npm
+
+      - name: Set up Java
+        uses: actions/setup-java@v6
+        with:
+          distribution: temurin
+          java-version: '21'
+          cache: gradle
+          cache-dependency-path: |
+            android/**/*.gradle
+            android/gradle/wrapper/gradle-wrapper.properties
+
+      - name: Ensure Android SDK packages are installed
+        run: sdkmanager 'platforms;android-36' 'build-tools;35.0.0' 'build-tools;36.0.0'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build web app and sync Android
+        run: npm run android:sync
+
+      - name: Build debug APK
+        working-directory: android
+        run: |
+          chmod +x gradlew
+          ./gradlew assembleDebug --no-daemon --stacktrace
+
+      - name: Prepare APK download
+        run: |
+          mkdir -p artifacts
+          cp android/app/build/outputs/apk/debug/app-debug.apk artifacts/MotionAlarm.apk
+
+      - name: Upload APK
+        uses: actions/upload-artifact@v7
+        with:
+          name: MotionAlarm-Android
+          path: artifacts/MotionAlarm.apk
+          if-no-files-found: error
+          retention-days: 7
+
+      - name: Add download instructions
+        run: |
+          cat >> "$GITHUB_STEP_SUMMARY" <<'EOF'
+          ## Android APK built
+
+          Download **MotionAlarm-Android** from this run's **Artifacts** section.
+          Extract the downloaded ZIP to get **MotionAlarm.apk**.
+
+          To also create a release with an installation QR code, manually run
+          this workflow and select **Publish a test release with an APK download and QR code**.
+          EOF
+
+  publish:
+    name: Publish APK and installation QR
+    needs: build
+    if: ${{ github.event_name == 'workflow_dispatch' && inputs.publish_release }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    permissions:
+      contents: write
+    env:
+      RELEASE_TAG: android-${{ github.run_number }}-${{ github.run_attempt }}
+    steps:
+      - name: Download APK
+        uses: actions/download-artifact@v8
+        with:
+          name: MotionAlarm-Android
+          path: artifacts
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v7
+        with:
+          node-version: '24'
+          package-manager-cache: false
+
+      - name: Prepare installation URLs
+        run: |
+          release_url="$GITHUB_SERVER_URL/$GITHUB_REPOSITORY/releases/download/$RELEASE_TAG"
+          echo "APK_URL=$release_url/MotionAlarm.apk" >> "$GITHUB_ENV"
+          echo "QR_URL=$release_url/install-qr.png" >> "$GITHUB_ENV"
+
+      - name: Generate installation QR code
+        run: npx --yes --package=qrcode@1.5.4 qrcode --output artifacts/install-qr.png "$APK_URL"
+
+      - name: Write installation instructions
+        run: |
+          cat > artifacts/INSTALL.md <<EOF
+          ## Install MotionAlarm on Android
+
+          [Download MotionAlarm.apk]($APK_URL)
+
+          Scan this QR code on your Android phone to download the APK:
+
+          ![Download MotionAlarm]($QR_URL)
+
+          Open the downloaded APK and approve installation when Android asks.
+          This is a debug build for testing. Production releases need a persistent signing key.
+
+          Public repositories allow anyone to use the download link.
+          Private repositories require a GitHub login with repository access.
+          EOF
+
+      - name: Create test release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release create "$RELEASE_TAG" \
+            artifacts/MotionAlarm.apk \
+            artifacts/install-qr.png \
+            --repo "$GITHUB_REPOSITORY" \
+            --target "$GITHUB_SHA" \
+            --title "MotionAlarm Android test build $GITHUB_RUN_NUMBER" \
+            --notes-file artifacts/INSTALL.md \
+            --prerelease \
+            --latest=false
+
+      - name: Add installation links to summary
+        run: cat artifacts/INSTALL.md >> "$GITHUB_STEP_SUMMARY"
