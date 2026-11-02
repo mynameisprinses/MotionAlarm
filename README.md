@@ -154,7 +154,7 @@ On macOS, you can add iOS later with `npm install @capacitor/ios`, `npx cap add 
 
 ## Build an Android APK with GitHub Actions
 
-The workflow is in `.github/workflows/android.yml`. It builds on pushes and pull requests to `master` or `main`, and you can also run it manually. It sets up Node.js 24 and Java 21, and uses Android SDK 36 already installed on GitHub's Ubuntu 24.04 runner, so Android Studio is not needed on your computer.
+The workflow is in `.github/workflows/android.yml`. It builds on pushes and pull requests to `master` or `main`, and you can also run it manually. It sets up Node.js 24, Java 21, Android command-line tools, and Android SDK 36 on GitHub's Ubuntu 24.04 runner, so Android Studio is not needed on your computer.
 
 Commit and push the workflow along with the project. Include `package-lock.json` and the `android` folder, including the Gradle wrapper JAR. If you already created GitHub's sample `CI` workflow, replace it with this workflow or remove that sample to avoid an extra run that only prints messages.
 
