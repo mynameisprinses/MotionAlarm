@@ -4,7 +4,7 @@ import { Capacitor } from '@capacitor/core';
 import { ApiError, ApiService } from '../api/api-request';
 import { NATIVE_ALARM } from '../home/native-alarm';
 
-import { AuthService } from './auth.service';
+import { AuthService, authErrorMessage } from './auth.service';
 import type { LoginSession } from './auth.service';
 
 const apiRequest = vi.fn();
@@ -16,6 +16,13 @@ const session: LoginSession = {
 };
 
 describe('REST login sessions', () => {
+  it('explains how to resolve missing Firebase Authentication configuration', () => {
+    const message = authErrorMessage(
+      new ApiError(400, 'CONFIGURATION_NOT_FOUND', 'Firebase could not complete the request.'),
+    );
+    expect(message).toContain('Authentication is not set up');
+    expect(message).toContain('enable Email/Password');
+  });
   beforeEach(() => {
     apiRequest.mockReset();
     localStorage.clear();

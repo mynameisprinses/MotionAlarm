@@ -161,6 +161,8 @@ export function authErrorMessage(error: unknown): string {
       return 'Too many attempts. Please wait and try again.';
     case 'OPERATION_NOT_ALLOWED':
       return 'Email/password login is not enabled in Firebase Authentication yet.';
+    case 'CONFIGURATION_NOT_FOUND':
+      return 'Firebase Authentication is not set up for this project. Open Authentication in Firebase Console, select Get started, and enable Email/Password.';
     case 'USER_DISABLED':
       return 'This account has been disabled.';
     default:
