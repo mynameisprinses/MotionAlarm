@@ -12,7 +12,6 @@ import {
   IonContent,
   IonHeader,
   IonIcon,
-  IonTitle,
   IonToolbar,
 } from '@ionic/angular';
 import { addIcons } from 'ionicons';
@@ -40,7 +39,6 @@ import { AlertHistoryService } from './alert-history.service';
     IonContent,
     IonHeader,
     IonIcon,
-    IonTitle,
     IonToolbar,
   ],
 })
@@ -144,7 +142,7 @@ export class AlertHistoryPage implements OnInit, OnDestroy {
   async confirmDelete(alert: MovementAlert): Promise<void> {
     const dialog = await this.alertController.create({
       header: 'Delete this alert?',
-      message: 'This removes the alert from this device.',
+      message: 'This removes the alert from your account on all devices.',
       buttons: [
         { text: 'Cancel', role: 'cancel' },
         {
@@ -172,7 +170,7 @@ export class AlertHistoryPage implements OnInit, OnDestroy {
   async confirmClearHistory(): Promise<void> {
     const dialog = await this.alertController.create({
       header: 'Clear all alert history?',
-      message: 'All saved alerts on this device will be deleted. This cannot be undone.',
+      message: 'All saved alerts in your account will be deleted on all devices. This cannot be undone.',
       buttons: [
         { text: 'Cancel', role: 'cancel' },
         {

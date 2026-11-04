@@ -4,7 +4,13 @@ A beginner-friendly phone movement alarm built from the **Ionic Angular blank st
 
 ## Run it
 
-Dependencies are already installed in this workspace. Start the app with:
+Dependencies are already installed in this workspace. Start the REST API in one terminal:
+
+```sh
+npm run api
+```
+
+Start the app in a second terminal:
 
 ```sh
 npm start
@@ -12,9 +18,13 @@ npm start
 
 Open `http://localhost:4200`. You can also use `ionic serve` if you have the Ionic CLI installed.
 
+The app now connects through **Ionic → Express REST API → Firebase**. Read the [beginner REST walkthrough](docs/REST-API.md) for the route table, a button-to-database example, and phone deployment steps.
+
 For a fresh checkout, run `npm install` first. Use Node.js 24.15 or newer in the Node 24 release line, or another version supported by Angular 22.
 
 ## Try the features
+
+Log in or register with an email and password first. Each account has its own movement alerts. Password resets are available from the login page.
 
 1. Tap **Motion alarm start**, allow notifications on Android (or motion access in a browser), and put the phone down during the five-second countdown.
 2. Wait for **Watching for movement**. Lift, tilt, or move the phone enough to pass the selected sensitivity.
@@ -24,7 +34,21 @@ For a fresh checkout, run `npm install` first. Use Node.js 24.15 or newer in the
 6. **Delete** removes one log after confirmation. **Clear history** removes all logs after confirmation.
 7. Tap the **Settings gear** at the top to change sensitivity, vibration, or sound. Controls are disabled while monitoring. The selected values remain available while navigating between pages.
 
-On a computer, use **Create test alert** to try the same CRUD controls without an accelerometer. These entries are labeled **Test alert**, and play a two-second sound preview when sound is enabled.
+On a computer, use **Test alarm** to preview sound and vibration without an accelerometer. Tests never create history records, locally or in Firestore.
+
+## Firebase setup
+
+The public project configuration for `motionalarm-560cd` is in `api/config.mjs`. The app only needs an API URL. Development uses `http://localhost:3000/api`; set your hosted HTTPS URL in `src/environments/environment.prod.ts` before building the installed app. Analytics is not initialized. No service-account key is needed.
+
+1. In Firebase Console, enable **Authentication → Sign-in method → Email/Password**.
+2. Create the default **Cloud Firestore Standard edition** database.
+3. Publish the contents of `firestore.rules` in **Firestore Database → Rules**, or run `npx firebase login` followed by `npx firebase deploy --only firestore:rules --project motionalarm-560cd` from this directory.
+
+Alerts live at `users/{uid}/alerts/{alertId}`. The API verifies the login with Firebase Authentication, then forwards the user's token to Firestore. Rules restrict access to the signed-in owner and reject Test records, malformed events, and edits to event details. Upload receipts live at `users/{uid}/imports/{alertId}` so retrying an upload cannot recreate a deleted alert. Receipts contain only the event ID and remain after history is cleared.
+
+The app keeps a separate local cache and offline change queue for each account. It sends changes through REST and refreshes history every five seconds while visible. Android first queues background movement under the signed-in user's ID, then uploads it when open and connected. Queue entries are removed only after the API acknowledges them. Use a trusted device because login tokens and cached alerts remain locally. Signing out clears the visible history and is blocked during an active alarm.
+
+Existing history from the earlier account-free version is not automatically assigned to whichever person logs in first. It is left in the old local storage. New account history comes from Firestore and the current user's Android queue.
 
 ## Where to read the code
 
@@ -52,13 +76,13 @@ On a computer, use **Create test alert** to try the same CRUD controls without a
 
 ## Beginner walkthrough
 
-The pages use ordinary variables, functions, `if` statements, and `for` loops, with no state library, RxJS pipelines, or NgModules. A small shared Angular service holds alert history so both pages use the same data. Monitoring and browser sound stay in the home page and sound helper. Android background work needs a native Java service because a hidden WebView cannot reliably keep JavaScript timers and motion events running.
+The pages use ordinary variables and functions. Shared authentication and history use Angular signals so HTTP replies and offline changes update the screen. REST routes are plain Express functions, with Firebase requests in one helper file. Monitoring and browser sound stay in the home page and sound helper. Android background work needs a native Java service because a hidden WebView cannot reliably keep JavaScript timers and motion events running.
 
 `routerLink="/alert-history"` opens the history page without reloading the app. Ionic keeps the monitor page in memory, so moving between these pages preserves the monitoring session. The history page uses `ionViewWillEnter()` to refresh Android logs whenever it opens, including when Ionic reuses the page. Browser alerts stay in the shared service, so going back does not restore deleted logs or lose alerts that could not be saved.
 
 ### Follow the code step by step
 
-The application logic is imperative: each function changes variables or performs an action in order. Status changes use `if/else`, filtering uses a `for` loop, and deletion finds an ID before calling `splice()`. Validation checks one field at a time. There are no RxJS pipelines, `map`/`filter`/`reduce` chains, or custom state frameworks in this logic.
+Monitoring functions perform actions in order. The history page filters by date and status, while its service sends REST requests. One shared list updates both pages. The API saves events and receipts atomically so retries cannot overwrite an already processed event. The [REST walkthrough](docs/REST-API.md) follows one review button click through every file.
 
 Start with `startMonitoring()` in `home.page.ts`. It chooses one of two paths:
 
@@ -93,13 +117,13 @@ The service uses a partial wake lock while monitoring so a non-wakeup accelerome
 
 Android can still stop the service because of device-specific battery restrictions or memory pressure. **Force stop**, the Android active-apps **Stop** control, and a phone reboot end monitoring. This version respects those stops and does not automatically restart. You must open the app and arm it again.
 
-Android alerts are written directly to app-private `SharedPreferences` by `AlertStore`, including alerts triggered while the page is closed. Reopening the app reads the latest native history and service state, including the armed sensitivity and feedback settings. Previous localStorage history is copied into Android storage once during migration.
+Android queues movement alerts in account-specific app-private `SharedPreferences` through `AlertStore`, including while the page is closed. Reopening the app syncs the current user's queue to Firestore and restores the native service state. The background service does not depend on JavaScript being active to detect movement or sound the alarm.
 
 ### Alarm sound
 
 The native `AlarmSound` helper plays the phone's default alarm tone in a loop using the alarm audio stream. It requests audio focus and pauses or stops if another audio source takes focus. Alarm volume, Do Not Disturb settings, audio routing, and device behavior can affect audibility; this app does not change those settings.
 
-The browser helper generates an alternating tone with the Web Audio API. Audio is unlocked from the start or Create test alert button tap. Real movement alarms ring until **Motion alarm stop**; manually created test alerts preview the sound for two seconds. Switching off **Sound on alert** in Settings keeps motion logging and the independent vibration setting available.
+The browser helper generates an alternating tone with the Web Audio API. Audio is unlocked from the start or **Test alarm** button tap. Real movement alarms ring until **Motion alarm stop**; tests preview the sound for two seconds without saving an alert. Switching off **Sound on alert** keeps motion logging and the independent vibration setting available.
 
 ### Motion detection
 
@@ -128,16 +152,16 @@ The app shell and routed pages use `ChangeDetectionStrategy.Eager` so these refr
 
 | Operation | Function | What it does |
 | --- | --- | --- |
-| Create | `createAlert()` | Makes an alert object and adds it to the start of the array with `unshift()` |
-| Read | `loadAlerts()` | Loads the saved JSON array when the page opens |
+| Create | `createAlert()` | Queues a movement alert and sends `POST /api/alerts` |
+| Read | `refresh()` | Sends queued changes and loads `GET /api/alerts` |
 | Read/filter | `visibleAlerts` | Uses a `for` loop to build the list for the selected filter |
 | Update | `toggleStatus()` | Changes `New` to `Reviewed`, or back again |
-| Delete | `deleteAlert()` | Finds the matching ID in a `for` loop and removes it with `splice()` |
-| Delete all | `clearHistory()` | Removes the saved array after confirmation |
+| Delete | `deleteAlert()` | Sends `DELETE /api/alerts/:id` after confirmation |
+| Delete all | `clearHistory()` | Deletes the account's saved alerts in batches after confirmation |
 
-In the browser, `AlertHistoryService.saveAlerts()` converts the array into JSON and stores it in `localStorage` under the key `motion-alarm-alerts`. The history page supplies the filter and confirmation dialogs, and the shared service performs CRUD. On Android, the service calls the native store through the plugin; movement detection creates logs inside the native foreground service. Native storage prevents the page from overwriting an alert created in the background. The history survives page reloads and app restarts, with no account or backend. Settings reset after a reload unless an Android session is still running, in which case its active settings are restored.
+`AlertHistoryService` uses REST for alert CRUD and refreshes the shared list every five seconds while the app is visible. Android queues background events before syncing through the same API. The page supplies date/status filters and confirmation dialogs. Deleting or clearing affects the account on all devices. Settings reset after a reload unless an Android session is still running, in which case its active settings are restored.
 
-If storage cannot be written, the app keeps the current alerts visible and explains that changes are only in memory. If saved history is unreadable, the app preserves it until you explicitly clear it.
+Offline changes stay in the app's account-specific queue until connected. Pending Android events remain on the phone until successfully uploaded. History shows cached/pending/offline state, failures, and Retry sync. Clear history requires a connection and waits for pending changes. The previous SDK's IndexedDB cache is not migrated; reconnect an old installation before upgrading to finish any still-pending SDK writes.
 
 ## Run on Android
 
@@ -198,7 +222,7 @@ References: [manual workflow runs](https://docs.github.com/en/actions/how-tos/ma
 - Browser motion access requires a supported phone, permission where applicable, and HTTPS. `localhost` is also treated as secure; opening a computer's plain HTTP LAN address on a phone usually is not.
 - Real sound and vibration depend on device support and settings. Check Android's alarm volume and default alarm tone. The app respects audio focus and does not override Do Not Disturb.
 - Very gentle movement may not pass the acceleration threshold. Test sensitivity on your actual phone.
-- Clearing app/browser data or uninstalling the app removes its local history.
+- Clearing app/browser data or uninstalling removes local cached data and any unsynced alerts. Alerts already saved in Firestore remain in the account.
 - Native motion, screen-off operation, physical vibration, sound audibility, and device battery behavior still need testing on a real phone. Browser tests simulate motion and observe sound/vibration calls; Angular integration tests use a fake native bridge.
 
 ## Check the updated APK on your phone
@@ -221,7 +245,7 @@ npm run lint
 npm test
 ```
 
-Browser tests use an installed Google Chrome and run at desktop and mobile sizes. If Chrome is unavailable, install it or change the Playwright config to another installed supported browser. The tests cover CRUD persistence, sensor triggering, countdown cancellation, sensitivity, sound and vibration controls, stopping sound, denied permissions, unavailable sensors, storage failures, and responsive layout. Native-bridge integration tests cover starting/stopping the Android service, permission errors, background state/history restoration, and keeping the service active when the screen component is destroyed.
+Browser tests use installed Google Chrome at desktop and mobile sizes. `npm run test:e2e` starts Auth and Firestore emulators, checks security rules, tests the REST API, then starts a test API on port 3001 and a browser app on port 4201. Everything uses the separate `demo-motion-alarm` project. Java 21 or newer is required. Test accounts and alerts never go to the production project. Coverage includes authentication, token refresh, account isolation, CRUD persistence, offline review, sensor triggering, unsaved tests, settings, and responsive layout. Unit tests also cover the Android bridge, account switching, offline queues, and retries.
 
 See [verification notes](docs/VALIDATION.md) for the recorded results and [desktop](docs/screenshots/desktop.png) / [mobile](docs/screenshots/mobile.png) previews.
 

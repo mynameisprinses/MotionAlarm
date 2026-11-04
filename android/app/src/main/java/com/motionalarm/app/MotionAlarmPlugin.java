@@ -84,12 +84,36 @@ public class MotionAlarmPlugin extends Plugin {
         JSONArray savedHistory = store.read();
         JSArray alerts = new JSArray(savedHistory.toString());
         result.put("alerts", alerts);
+        result.put("historyOwner", store.owner());
         return result;
     }
 
     @PluginMethod
     public void getState(PluginCall call) {
         handler.post(() -> resolveState(call));
+    }
+
+    @PluginMethod
+    public void setHistoryOwner(PluginCall call) {
+        handler.post(() -> {
+            String userId = call.getString("userId");
+            if (userId == null || userId.isEmpty() || userId.contains("/")) {
+                call.reject("Log in before selecting an alert account.");
+                return;
+            }
+            try {
+                AlertStore store = new AlertStore(getContext());
+                MotionAlarmService service = MotionAlarmService.instance;
+                if (!userId.equals(store.owner()) && service != null && !"idle".equals(service.state)) {
+                    call.reject("Stop the existing motion alarm before changing accounts.");
+                    return;
+                }
+                store.setOwner(userId);
+                call.resolve();
+            } catch (Exception error) {
+                call.reject(error.getMessage());
+            }
+        });
     }
 
     private void resolveState(PluginCall call) {
@@ -292,15 +316,13 @@ public class MotionAlarmPlugin extends Plugin {
     public void createTestAlert(PluginCall call) {
         handler.post(() -> {
             try {
-                AlertStore store = new AlertStore(getContext());
-                store.create("Test", null);
                 if (call.getBoolean("soundEnabled", true)) {
                     try {
                         handler.removeCallbacks(stopPreview);
                         previewSound.start();
                         handler.postDelayed(stopPreview, 2000);
                     } catch (Exception error) {
-                        MotionAlarmService.lastMessage = "Test alert saved, but alarm sound is unavailable: " + error.getMessage();
+                        MotionAlarmService.lastMessage = "The test sound is unavailable: " + error.getMessage();
                     }
                 }
                 resolveState(call);
@@ -339,6 +361,11 @@ public class MotionAlarmPlugin extends Plugin {
             }
             try {
                 AlertStore store = new AlertStore(getContext());
+                String userId = call.getString("userId");
+                if (userId != null && !userId.equals(store.owner())) {
+                    call.reject("The alert account changed. Retry sync from the correct account.");
+                    return;
+                }
                 store.delete(id);
                 resolveState(call);
             } catch (Exception error) {

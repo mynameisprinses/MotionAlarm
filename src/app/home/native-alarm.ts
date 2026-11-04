@@ -10,6 +10,7 @@ export interface NativeAlarmState {
   strength: number;
   message: string;
   alerts: MovementAlert[];
+  historyOwner?: string;
   threshold?: number;
   soundEnabled?: boolean;
   vibrationEnabled?: boolean;
@@ -19,10 +20,11 @@ interface NativeAlarmPlugin {
   start(options: { threshold: number; soundEnabled: boolean; vibrationEnabled: boolean }): Promise<void>;
   stop(): Promise<NativeAlarmState>;
   getState(): Promise<NativeAlarmState>;
+  setHistoryOwner(options: { userId: string }): Promise<void>;
   importHistory(options: { alerts: MovementAlert[] }): Promise<void>;
   createTestAlert(options: { soundEnabled: boolean }): Promise<NativeAlarmState>;
   updateAlert(options: { id: string; status: 'New' | 'Reviewed' }): Promise<NativeAlarmState>;
-  deleteAlert(options: { id: string }): Promise<NativeAlarmState>;
+  deleteAlert(options: { id: string; userId?: string }): Promise<NativeAlarmState>;
   clearAlerts(): Promise<NativeAlarmState>;
   addListener(event: 'stateChanged', listener: () => void): Promise<PluginListenerHandle>;
 }

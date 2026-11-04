@@ -1,0 +1,119 @@
+.login-shell {
+  width: min(100%, 480px);
+  margin: auto;
+  padding: max(32px, env(safe-area-inset-top)) 20px max(32px, env(safe-area-inset-bottom));
+}
+.product-name {
+  margin: 0 0 24px;
+  color: var(--ion-color-primary);
+  font-size: 22px;
+  font-weight: 650;
+}
+.login-panel {
+  padding: 24px;
+  background: #fff;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+}
+h1 {
+  margin: 0 0 12px;
+  font-size: clamp(24px, 5vw, 30px);
+  letter-spacing: -0.7px;
+}
+.intro,
+.field-help {
+  color: var(--muted);
+  font-size: 13px;
+  line-height: 1.7;
+}
+.intro {
+  margin: 0 0 24px;
+}
+.account-tabs {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 24px;
+}
+button {
+  min-height: 44px;
+  padding: 10px 16px;
+  border-radius: 7px;
+  background: #fff;
+  border: 1px solid #7b8c80;
+  color: var(--ion-text-color);
+  font: inherit;
+  cursor: pointer;
+}
+.account-tabs button {
+  flex: 1;
+}
+.selected {
+  background: #e7f0e9;
+  border-color: var(--ion-color-primary);
+  color: var(--ion-color-primary);
+}
+label {
+  display: block;
+  margin: 18px 0 8px;
+  font-size: 14px;
+  font-weight: 600;
+}
+input {
+  width: 100%;
+  min-height: 46px;
+  padding: 10px 12px;
+  border: 1px solid #7b8c80;
+  border-radius: 7px;
+  background: #fff;
+  color: var(--ion-text-color);
+  font: inherit;
+}
+input:focus-visible,
+button:focus-visible {
+  outline: 2px solid var(--ion-color-primary);
+  outline-offset: 3px;
+}
+button:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+.field-help {
+  margin: 6px 0 0;
+}
+ion-button {
+  margin: 24px 0 0;
+  min-height: 46px;
+}
+.text-button {
+  margin-top: 14px;
+  padding-inline: 0;
+  border: 0;
+  color: var(--ion-color-primary);
+  text-decoration: underline;
+  font-size: 14px;
+}
+.error-message,
+.feedback-message {
+  margin: 16px 0 0;
+  padding: 12px;
+  font-size: 13px;
+  line-height: 1.7;
+  border-radius: 7px;
+  overflow-wrap: anywhere;
+}
+.error-message {
+  color: #8d2924;
+  background: #fceeed;
+}
+.feedback-message {
+  color: #23573d;
+  background: #e7f0e9;
+}
+@media (min-width: 620px) {
+  .login-shell {
+    padding-top: 64px;
+  }
+  .login-panel {
+    padding: 32px;
+  }
+}

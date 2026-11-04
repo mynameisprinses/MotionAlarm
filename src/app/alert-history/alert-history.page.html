@@ -2,9 +2,8 @@
   <ion-toolbar>
     <div class="topbar">
       <ion-buttons slot="start">
-        <ion-back-button defaultHref="/home" text="Back" aria-label="Back to monitor"></ion-back-button>
+        <ion-back-button defaultHref="/home" text="" aria-label="Back to monitor"></ion-back-button>
       </ion-buttons>
-      <ion-title>Alert history</ion-title>
     </div>
   </ion-toolbar>
 </ion-header>
@@ -20,7 +19,7 @@
         <ion-button
           fill="clear"
           color="danger"
-          [disabled]="history.loadingHistory || (history.alerts.length === 0 && !history.storageError)"
+          [disabled]="history.loadingHistory || history.hasPendingWrites || history.alerts.length === 0"
           (click)="confirmClearHistory()"
           >Clear history</ion-button
         >
@@ -69,7 +68,7 @@
       <div class="empty-state">
         <ion-icon name="checkmark-circle-outline" aria-hidden="true"></ion-icon>
         <h2>No alerts yet</h2>
-        <p>Return to the monitor to start the motion alarm or create a test alert.</p>
+        <p>Start the motion alarm on the monitor to record movement. Test alarms are not saved.</p>
         <a class="monitor-link" routerLink="/home">Go to monitor</a>
       </div>
       } @else if (visibleAlerts.length === 0) {
@@ -98,10 +97,16 @@
               }
             </div>
             <div class="alert-actions">
-              <ion-button fill="outline" (click)="toggleStatus(alert)"
+              <ion-button fill="outline" [disabled]="history.isNativePending(alert.id)" (click)="toggleStatus(alert)"
                 >{{ alert.status === 'New' ? 'Mark reviewed' : 'Mark new' }}</ion-button
               >
-              <ion-button fill="clear" color="danger" (click)="confirmDelete(alert)">Delete</ion-button>
+              <ion-button
+                fill="clear"
+                color="danger"
+                [disabled]="history.isNativePending(alert.id)"
+                (click)="confirmDelete(alert)"
+                >Delete</ion-button
+              >
             </div>
           </li>
           }
@@ -110,11 +115,16 @@
       }
     </section>
 
-    @if (history.storageError) {
+    @if (history.offline() || history.hasPendingWrites || history.showingCache()) {
+    <p class="message" role="status">
+      {{ history.offline() ? 'Offline. Showing cached alerts. Changes sync when connected.' : history.hasPendingWrites ?
+      'Saving movement alerts to your account…' : 'Showing cached alerts. Connecting to your account…' }}
+    </p>
+    } @if (history.storageError) {
     <p class="message error-message" role="alert">{{ history.storageError }}</p>
+    <ion-button fill="outline" (click)="history.refresh()">Retry sync</ion-button>
     } @if (feedback) {
     <p class="message feedback-message" role="status">{{ feedback }}</p>
     }
-    <footer>Your alerts stay on this device. Clearing app or browser data removes them.</footer>
   </main>
 </ion-content>

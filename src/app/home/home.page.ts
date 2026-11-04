@@ -9,13 +9,7 @@ import type { AccelListenerEvent } from '@capacitor/motion';
 import { Motion } from '@capacitor/motion';
 import { IonButton, IonContent, IonHeader, IonIcon, IonTitle, IonToolbar } from '@ionic/angular';
 import { addIcons } from 'ionicons';
-import {
-  phonePortraitOutline,
-  settingsOutline,
-  shieldCheckmarkOutline,
-  shieldOutline,
-  warningOutline,
-} from 'ionicons/icons';
+import { settingsOutline, shieldCheckmarkOutline, shieldOutline, warningOutline } from 'ionicons/icons';
 
 import { AlertHistoryService } from '../alert-history/alert-history.service';
 import { AlarmSettingsService } from '../settings/alarm-settings.service';
@@ -62,7 +56,7 @@ export class HomePage implements OnInit, OnDestroy {
   private nativeListener: PluginListenerHandle | null = null;
 
   constructor() {
-    addIcons({ phonePortraitOutline, settingsOutline, shieldCheckmarkOutline, shieldOutline, warningOutline });
+    addIcons({ settingsOutline, shieldCheckmarkOutline, shieldOutline, warningOutline });
   }
 
   ngOnInit(): void {
@@ -84,6 +78,8 @@ export class HomePage implements OnInit, OnDestroy {
       await this.refreshNativeState();
     } catch (error) {
       this.sensorError = this.errorMessage(error, 'Could not connect to Android background monitoring.');
+      // Restore an older active session so it can be stopped before switching account ownership.
+      await this.refreshNativeState();
     } finally {
       this.nativeReady = true;
       this.history.loadingHistory = false;
@@ -98,7 +94,7 @@ export class HomePage implements OnInit, OnDestroy {
     this.settings.applyNativeSettings(snapshot);
     this.countdown = snapshot.countdown;
     this.strength = snapshot.strength;
-    this.history.replaceNativeAlerts(snapshot.alerts);
+    this.history.replaceNativeAlerts(snapshot.alerts, snapshot.historyOwner);
     this.sensorError = snapshot.message;
     this.changeDetector.markForCheck();
   }
@@ -141,6 +137,7 @@ export class HomePage implements OnInit, OnDestroy {
     }
     this.settings.state = 'starting';
     try {
+      await this.history.initialize();
       await this.nativeAlarm.start({
         threshold: this.settings.threshold,
         soundEnabled: this.settings.soundEnabled,
@@ -347,9 +344,8 @@ export class HomePage implements OnInit, OnDestroy {
           this.sensorError = this.errorMessage(error, 'The test alarm sound could not start.');
         }
       }
-      this.history.createAlert('Test', null);
     }
-    this.feedback = 'Test alert created. Open View alert history to review or delete it.';
+    this.feedback = 'Test alarm started. No alert was saved.';
     await this.vibratePhone();
     this.changeDetector.markForCheck();
   }
@@ -361,7 +357,9 @@ export class HomePage implements OnInit, OnDestroy {
     try {
       await Haptics.vibrate({ duration: 1000 });
     } catch {
-      this.feedback = 'The alert was created, but vibration is unavailable on this device.';
+      this.feedback = this.feedback
+        ? this.feedback + ' Vibration is unavailable on this device.'
+        : 'Movement detected, but vibration is unavailable on this device.';
       this.changeDetector.markForCheck();
     }
   }

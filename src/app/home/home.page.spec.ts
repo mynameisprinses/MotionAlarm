@@ -3,6 +3,8 @@ import { TestBed } from '@angular/core/testing';
 import { provideRouter } from '@angular/router';
 import { Capacitor } from '@capacitor/core';
 
+import { AlertHistoryService } from '../alert-history/alert-history.service';
+
 import { HomePage } from './home.page';
 import { NATIVE_ALARM } from './native-alarm';
 import type { NativeAlarmState } from './native-alarm';
@@ -30,6 +32,16 @@ describe('HomePage Android integration', () => {
   let component: HomePage;
   let fixture: ComponentFixture<HomePage>;
   const removeListener = vi.fn().mockResolvedValue(undefined);
+  const history = {
+    alerts: [] as (typeof savedAlert)[],
+    storageError: '',
+    loadingHistory: false,
+    initialize: vi.fn().mockResolvedValue(undefined),
+    replaceNativeAlerts: vi.fn((alerts: (typeof savedAlert)[]) => {
+      history.alerts = alerts;
+    }),
+    createAlert: vi.fn(),
+  };
 
   beforeEach(async () => {
     vi.clearAllMocks();
@@ -40,7 +52,11 @@ describe('HomePage Android integration', () => {
     vi.spyOn(Capacitor, 'isNativePlatform').mockReturnValue(true);
     vi.spyOn(Capacitor, 'getPlatform').mockReturnValue('android');
     TestBed.configureTestingModule({
-      providers: [provideRouter([]), { provide: NATIVE_ALARM, useValue: NativeAlarm }],
+      providers: [
+        provideRouter([]),
+        { provide: NATIVE_ALARM, useValue: NativeAlarm },
+        { provide: AlertHistoryService, useValue: history },
+      ],
     });
     fixture = TestBed.createComponent(HomePage);
     component = fixture.componentInstance;
@@ -105,12 +121,12 @@ describe('HomePage Android integration', () => {
     expect(component.settings.state).toBe('idle');
   });
 
-  it('updates Android-owned alerts through the native store', async () => {
-    vi.mocked(NativeAlarm.updateAlert).mockResolvedValue({ ...idle, alerts: [{ ...savedAlert, status: 'Reviewed' }] });
-    await component.history.toggleStatus(savedAlert);
-    expect(NativeAlarm.updateAlert).toHaveBeenCalledWith({ id: savedAlert.id, status: 'Reviewed' });
-    expect(component.history.alerts[0].status).toBe('Reviewed');
-    expect(localStorage.getItem('motion-alarm-alerts')).toBeNull();
+  it('plays Android test feedback without creating a browser history record', async () => {
+    NativeAlarm.createTestAlert.mockResolvedValue(idle);
+    await component.createTestAlert();
+    expect(NativeAlarm.createTestAlert).toHaveBeenCalledWith({ soundEnabled: true });
+    expect(history.createAlert).not.toHaveBeenCalled();
+    expect(component.feedback).toContain('No alert was saved');
   });
 
   it('keeps the alarm active while Android verification is pending and prevents duplicate requests', async () => {

@@ -1,13 +1,16 @@
 import { TestBed } from '@angular/core/testing';
 import { provideRouter } from '@angular/router';
 
+import { mockAuth } from '../testing/firebase-mocks';
+
 import { AppComponent } from './app.component';
+import { AuthService } from './auth/auth.service';
 
 describe('AppComponent', () => {
   it('should create the app', async () => {
     await TestBed.configureTestingModule({
       imports: [AppComponent],
-      providers: [provideRouter([])],
+      providers: [provideRouter([]), { provide: AuthService, useValue: mockAuth() }],
     }).compileComponents();
 
     const fixture = TestBed.createComponent(AppComponent);

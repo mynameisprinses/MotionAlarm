@@ -20,13 +20,33 @@ final class AlertStore {
     }
 
     JSONArray read() throws JSONException {
-        String savedHistory = preferences.getString("alerts", "[]");
-        return new JSONArray(savedHistory);
+        String savedHistory = preferences.getString(historyKey(), "[]");
+        JSONArray saved = new JSONArray(savedHistory);
+        JSONArray movement = new JSONArray();
+        for (int i = 0; i < saved.length(); i++) {
+            JSONObject alert = saved.getJSONObject(i);
+            if ("Movement".equals(alert.optString("source"))) movement.put(alert);
+        }
+        return movement;
+    }
+
+    String owner() {
+        return preferences.getString("history_owner", "");
+    }
+
+    void setOwner(String userId) {
+        if (!preferences.edit().putString("history_owner", userId).commit()) {
+            throw new IllegalStateException("Could not select the account for Android alerts.");
+        }
+    }
+
+    private String historyKey() {
+        return owner().isEmpty() ? "alerts" : "alerts_user_" + owner();
     }
 
     private void save(JSONArray alerts) {
         SharedPreferences.Editor editor = preferences.edit();
-        editor.putString("alerts", alerts.toString());
+        editor.putString(historyKey(), alerts.toString());
         boolean saved = editor.commit();
         if (!saved) {
             throw new IllegalStateException("Android could not save the alert history. Check available storage.");
@@ -34,6 +54,7 @@ final class AlertStore {
     }
 
     void create(String source, Double strength) throws JSONException {
+        if (!"Movement".equals(source)) return;
         SimpleDateFormat format = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'", Locale.US);
         format.setTimeZone(TimeZone.getTimeZone("UTC"));
         JSONObject alert = new JSONObject();

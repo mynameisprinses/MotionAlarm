@@ -2,10 +2,7 @@
   <ion-toolbar>
     <div class="topbar">
       <ion-title>MotionAlarm<span>Phone movement monitor</span></ion-title>
-      <span class="device-note">
-        <ion-icon name="phone-portrait-outline" aria-hidden="true"></ion-icon>
-        Stored on this device
-      </span>
+      <span class="device-note"> Alerts in your account </span>
       <ion-button class="settings-button" fill="clear" routerLink="/settings" aria-label="Open settings">
         <ion-icon slot="icon-only" name="settings-outline" aria-hidden="true"></ion-icon>
       </ion-button>
@@ -17,9 +14,7 @@
   <main class="page-shell">
     <div class="page-heading">
       <div>
-        <p class="eyebrow">A watchful phone starts here</p>
         <h1>Set it down. Switch it on.</h1>
-        <p>Movement rings an alarm, vibrates, and saves an alert.</p>
       </div>
       <a class="history-link" routerLink="/alert-history">View alert history</a>
     </div>
@@ -110,22 +105,21 @@
         }
       </section>
 
-      <section class="test-section" aria-labelledby="test-heading">
-        <h3 id="test-heading">Trying it on a computer?</h3>
-        <p>Create a labeled test alert to try the history controls. A motion sensor is not needed.</p>
+      <section class="test-section" aria-label="Test alerts">
+        <p>Try the alarm sound and vibration without a motion sensor. Tests are not saved to history.</p>
         <ion-button
           fill="outline"
           expand="block"
           [disabled]="settings.state !== 'idle' || isDisarming"
           (click)="createTestAlert()"
-          >Create test alert</ion-button
+          >Test alarm</ion-button
         >
+        @if (nativeAndroid) {
         <p class="foreground-note">
-          @if (nativeAndroid) { Android keeps monitoring with a visible notification, including while the screen is
-          locked. This uses extra battery. Force-stopping the app or Android stopping its service ends monitoring. }
-          @else { Browser preview: keep this page open and the screen awake. Install the Android APK for background and
-          lock-screen monitoring. }
+          Android keeps monitoring with a visible notification, including while the screen is locked. This uses extra
+          battery. Force-stopping the app or Android stopping its service ends monitoring.
         </p>
+        }
       </section>
     </div>
 
@@ -138,7 +132,5 @@
     } @if (feedback) {
     <p class="message feedback-message" role="status">{{ feedback }}</p>
     }
-
-    <footer>Your alerts stay on this device. Clearing app or browser data removes them.</footer>
   </main>
 </ion-content>

@@ -1,0 +1,93 @@
+<ion-content>
+  <main class="login-shell">
+    <p class="product-name">MotionAlarm</p>
+    <section class="login-panel" aria-labelledby="login-heading">
+      <h1 id="login-heading">
+        {{ mode === 'register' ? 'Create your account' : mode === 'reset' ? 'Reset your password' : 'Log in to
+        MotionAlarm' }}
+      </h1>
+      <p class="intro">
+        {{ mode === 'reset' ? 'Enter your account email to request a reset link.' : 'Keep your movement alerts in your
+        account. Test alarms are never saved.' }}
+      </p>
+      @if (mode !== 'reset') {
+      <div class="account-tabs" role="group" aria-label="Account access">
+        <button
+          type="button"
+          [class.selected]="mode === 'login'"
+          [attr.aria-pressed]="mode === 'login'"
+          [disabled]="busy"
+          (click)="changeMode('login')"
+        >
+          Log in
+        </button>
+        <button
+          type="button"
+          [class.selected]="mode === 'register'"
+          [attr.aria-pressed]="mode === 'register'"
+          [disabled]="busy"
+          (click)="changeMode('register')"
+        >
+          Register
+        </button>
+      </div>
+      }
+      <form (ngSubmit)="submit()">
+        <label for="email">Email</label>
+        <input
+          id="email"
+          name="email"
+          type="email"
+          autocomplete="email"
+          required
+          maxlength="254"
+          [(ngModel)]="email"
+          [disabled]="busy"
+        />
+        @if (mode !== 'reset') {
+        <label for="password">Password</label>
+        <input
+          id="password"
+          name="password"
+          type="password"
+          [autocomplete]="mode === 'register' ? 'new-password' : 'current-password'"
+          required
+          [attr.minlength]="mode === 'register' ? 6 : null"
+          [(ngModel)]="password"
+          [disabled]="busy"
+        />
+        @if (mode === 'register') {
+        <p class="field-help">Use at least 6 characters.</p>
+        <label for="confirmation">Confirm password</label>
+        <input
+          id="confirmation"
+          name="confirmation"
+          type="password"
+          autocomplete="new-password"
+          required
+          minlength="6"
+          [(ngModel)]="confirmation"
+          [disabled]="busy"
+        />
+        } }
+        <ion-button type="submit" expand="block" [disabled]="busy"
+          >{{ busy ? 'Please wait…' : mode === 'register' ? 'Create account' : mode === 'reset' ? 'Send reset link' :
+          'Log in' }}</ion-button
+        >
+      </form>
+      @if (error || auth.error()) {
+      <p class="error-message" role="alert">{{ error || auth.error() }}</p>
+      } @if (feedback) {
+      <p class="feedback-message" role="status">{{ feedback }}</p>
+      }
+      <button
+        class="text-button"
+        type="button"
+        [disabled]="busy"
+        (click)="changeMode(mode === 'reset' ? 'login' : 'reset')"
+      >
+        {{ mode === 'reset' ? 'Back to login' : 'Forgot password?' }}
+      </button>
+    </section>
+  </main>
+</ion-content>

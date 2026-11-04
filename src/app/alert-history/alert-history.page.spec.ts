@@ -8,6 +8,7 @@ import { NATIVE_ALARM } from '../home/native-alarm';
 import type { NativeAlarmState } from '../home/native-alarm';
 
 import { AlertHistoryPage } from './alert-history.page';
+import { AlertHistoryService } from './alert-history.service';
 
 const savedAlert: MovementAlert = {
   id: 'background-movement',
@@ -29,6 +30,23 @@ describe('AlertHistoryPage Android integration', () => {
     deleteAlert: vi.fn(),
   };
   const removeListener = vi.fn().mockResolvedValue(undefined);
+  const history = {
+    nativeAndroid: true,
+    alerts: [] as MovementAlert[],
+    loadingHistory: false,
+    storageError: '',
+    hasPendingWrites: false,
+    offline: () => false,
+    showingCache: () => false,
+    isNativePending: () => false,
+    refresh: vi.fn(async () => {
+      try {
+        history.alerts = (await nativeAlarm.getState()).alerts;
+      } catch (error) {
+        history.storageError = (error as Error).message;
+      }
+    }),
+  };
 
   beforeEach(async () => {
     vi.clearAllMocks();
@@ -40,7 +58,11 @@ describe('AlertHistoryPage Android integration', () => {
     nativeAlarm.getState.mockResolvedValue(snapshot);
     nativeAlarm.addListener.mockResolvedValue({ remove: removeListener });
     TestBed.configureTestingModule({
-      providers: [provideRouter([]), { provide: NATIVE_ALARM, useValue: nativeAlarm }],
+      providers: [
+        provideRouter([]),
+        { provide: NATIVE_ALARM, useValue: nativeAlarm },
+        { provide: AlertHistoryService, useValue: history },
+      ],
     });
     fixture = TestBed.createComponent(AlertHistoryPage);
     component = fixture.componentInstance;
@@ -51,8 +73,8 @@ describe('AlertHistoryPage Android integration', () => {
 
   afterEach(() => vi.restoreAllMocks());
 
-  it('imports old logs and loads native history when opened before the monitor', () => {
-    expect(nativeAlarm.importHistory).toHaveBeenCalledWith({ alerts: [{ ...savedAlert, id: 'legacy-alert' }] });
+  it('loads history when opened before the monitor without assigning legacy logs to an account', () => {
+    expect(nativeAlarm.importHistory).not.toHaveBeenCalled();
     expect(component.history.alerts).toEqual([savedAlert]);
     expect(component.history.loadingHistory).toBe(false);
   });
@@ -62,7 +84,7 @@ describe('AlertHistoryPage Android integration', () => {
     component.ionViewWillEnter();
     await fixture.whenStable();
     expect(component.history.alerts).toEqual([]);
-    expect(nativeAlarm.importHistory).toHaveBeenCalledOnce();
+    expect(nativeAlarm.importHistory).not.toHaveBeenCalled();
     fixture.destroy();
     expect(removeListener).toHaveBeenCalled();
     expect(nativeAlarm.stop).not.toHaveBeenCalled();

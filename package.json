@@ -11,14 +11,18 @@
     "lint": "npm run eslint && npm run typecheck:e2e && npm run prettier -- --check",
     "lint:fix": "npm run eslint -- --fix && npm run prettier -- --write",
     "eslint": "ng lint --max-warnings 0",
-    "prettier": "prettier \"src/**/*.{ts,html,scss}\" \"e2e/**/*.ts\" \"*.ts\"",
+    "prettier": "prettier \"src/**/*.{ts,html,scss}\" \"e2e/**/*.ts\" \"*.ts\" \"api/**/*.mjs\" \"tests/**/*.mjs\"",
     "typecheck:e2e": "tsc -p tsconfig.e2e.json",
     "test": "npm run test:unit && npm run test:e2e",
     "test:unit": "ng test --no-watch",
     "test:unit:watch": "ng test --watch",
-    "test:e2e": "playwright test",
+    "test:e2e": "firebase emulators:exec --project demo-motion-alarm --only auth,firestore \"npm run test:firebase\"",
+    "test:firebase": "npm run test:security && npm run test:api && playwright test",
+    "test:security": "node --test tests/firestore-rules.test.mjs",
     "android:sync": "npm run build && cap sync android",
-    "android:open": "cap open android"
+    "android:open": "cap open android",
+    "api": "node --env-file-if-exists=api/.env api/server.mjs",
+    "test:api": "node --test tests/api.test.mjs"
   },
   "private": true,
   "dependencies": {
@@ -36,6 +40,8 @@
     "@capacitor/motion": "^8.0.1",
     "@capacitor/status-bar": "8.0.4",
     "@ionic/angular": "^9.0.0",
+    "cors": "^2.8.6",
+    "express": "^5.3.0",
     "ionicons": "^8.1.0",
     "rxjs": "~7.8.0",
     "tslib": "^2.3.0"
@@ -46,6 +52,7 @@
     "@angular/compiler-cli": "22.2.3",
     "@angular/language-service": "22.2.3",
     "@capacitor/cli": "8.6.0",
+    "@firebase/rules-unit-testing": "^6.0.0",
     "@ionic/angular-toolkit": "^13.0.0",
     "@ionic/eslint-config": "^0.5.0",
     "@ionic/prettier-config": "^4.0.0",
@@ -53,12 +60,14 @@
     "@types/node": "^24.0.0",
     "angular-eslint": "22.6.0",
     "eslint": "^10.10.0",
+    "firebase-tools": "^15.34.2",
     "jsdom": "^30.1.1",
     "prettier": "^3.9.10",
     "typescript": "~6.0.0",
     "typescript-eslint": "^8.61.0",
-    "vitest": "~5.0.5"
+    "vitest": "~5.0.5",
+    "firebase": "^13.2.0"
   },
   "prettier": "@ionic/prettier-config",
-  "description": "A beginner-friendly Ionic Angular standalone motion alarm with local alert history"
+  "description": "An Ionic Angular motion alarm with Firebase login and per-user Firestore alert history"
 }

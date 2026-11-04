@@ -3,8 +3,18 @@ import type { OnDestroy, OnInit } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import type { PluginListenerHandle } from '@capacitor/core';
 import { Capacitor } from '@capacitor/core';
-import { IonBackButton, IonButtons, IonContent, IonHeader, IonTitle, IonToggle, IonToolbar } from '@ionic/angular';
+import {
+  IonBackButton,
+  IonButton,
+  IonButtons,
+  IonContent,
+  IonHeader,
+  IonToggle,
+  IonToolbar,
+  NavController,
+} from '@ionic/angular';
 
+import { AuthService } from '../auth/auth.service';
 import { NATIVE_ALARM } from '../home/native-alarm';
 
 import { AlarmSettingsService } from './alarm-settings.service';
@@ -15,10 +25,13 @@ import { AlarmSettingsService } from './alarm-settings.service';
   changeDetection: ChangeDetectionStrategy.Eager,
   templateUrl: 'settings.page.html',
   styleUrls: ['settings.page.scss'],
-  imports: [FormsModule, IonBackButton, IonButtons, IonContent, IonHeader, IonTitle, IonToggle, IonToolbar],
+  imports: [FormsModule, IonBackButton, IonButton, IonButtons, IonContent, IonHeader, IonToggle, IonToolbar],
 })
 export class SettingsPage implements OnInit, OnDestroy {
   settings = inject(AlarmSettingsService);
+  auth = inject(AuthService);
+  signingOut = false;
+  private nav = inject(NavController);
   nativeAndroid = Capacitor.isNativePlatform() && Capacitor.getPlatform() === 'android';
   ready = !this.nativeAndroid;
   error = '';
@@ -48,6 +61,21 @@ export class SettingsPage implements OnInit, OnDestroy {
   ionViewWillEnter(): void {
     if (this.nativeAndroid) {
       void this.loadSettings();
+    }
+  }
+
+  async signOut(): Promise<void> {
+    if (this.signingOut) return;
+    this.signingOut = true;
+    this.error = '';
+    try {
+      await this.auth.logout();
+      await this.nav.navigateRoot('/login');
+    } catch (error) {
+      this.error = error instanceof Error ? error.message : 'Could not sign out. Try again.';
+    } finally {
+      this.signingOut = false;
+      this.changeDetector.markForCheck();
     }
   }
 

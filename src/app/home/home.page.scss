@@ -1,7 +1,3 @@
-:host {
-  display: block;
-}
-
 ion-toolbar {
   --background: #fff;
   border-bottom: 1px solid var(--line);
@@ -56,23 +52,11 @@ ion-title span {
 .page-heading {
   margin-bottom: 24px;
 }
-.eyebrow {
-  margin: 0 0 8px;
-  font-size: 13px;
-  font-weight: 600;
-  color: var(--ion-color-primary);
-}
 h1 {
   margin: 0 0 10px;
   font-size: clamp(27px, 4vw, 37px);
   letter-spacing: -1.2px;
   font-weight: 700;
-}
-.page-heading > div > p:last-child {
-  margin: 0;
-  color: var(--muted);
-  line-height: 1.6;
-  font-size: 14px;
 }
 .history-link {
   display: inline-flex;
@@ -227,11 +211,6 @@ meter {
   padding-top: 22px;
   margin-top: 20px;
 }
-.test-section h3 {
-  font-size: 14px;
-  font-weight: 600;
-  margin: 0;
-}
 .test-section p {
   margin: 8px 0 12px;
 }
@@ -254,14 +233,6 @@ meter {
   color: #23593e;
   background: #e9f4ed;
   border: 1px solid #bfdcc9;
-}
-footer {
-  text-align: center;
-  margin-top: 22px;
-  padding: 0 12px 10px;
-  color: var(--muted);
-  font-size: 11px;
-  line-height: 1.8;
 }
 
 @media (min-width: 620px) {
