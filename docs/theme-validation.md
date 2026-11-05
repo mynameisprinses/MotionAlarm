@@ -2,6 +2,8 @@
 
 Verified November 5, 2026 (Asia/Manila). This report covers the appearance feature; earlier native and application verification remains in [VALIDATION.md](VALIDATION.md).
 
+The subsequent login and registration update is recorded in [auth-form-validation.md](auth-form-validation.md).
+
 ## Checks
 
 - PASS: `npm run build` produces the production web app without budget warnings.

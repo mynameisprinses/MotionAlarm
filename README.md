@@ -24,7 +24,7 @@ For a fresh checkout, run `npm install` first. Use Node.js 24.15 or newer in the
 
 ## Try the features
 
-Log in or register with an email and password first. Each account has its own movement alerts. Password resets are available from the login page.
+Log in or register with an email and password first. Each account has its own movement alerts. The email and password fields include placeholders. Select **Show password** on login, or **Show passwords** on registration, to reveal what you typed; clear it to hide the passwords again.
 
 1. Tap **Motion alarm start**, allow notifications on Android (or motion access in a browser), and put the phone down during the five-second countdown.
 2. Wait for **Watching for movement**. Lift, tilt, or move the phone enough to pass the selected sensitivity.

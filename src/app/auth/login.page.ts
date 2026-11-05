@@ -14,55 +14,51 @@ import { AuthService, authErrorMessage } from './auth.service';
 })
 export class LoginPage {
   auth = inject(AuthService);
-  mode: 'login' | 'register' | 'reset' = 'login';
+  mode: 'login' | 'register' = 'login';
   email = '';
   password = '';
   confirmation = '';
+  showPassword = false;
   busy = false;
   error = '';
-  feedback = '';
   private nav = inject(NavController);
   private changeDetector = inject(ChangeDetectorRef);
 
   async ionViewWillEnter(): Promise<void> {
+    this.showPassword = false;
     await this.auth.ready;
     if (this.auth.user()) {
       await this.nav.navigateRoot('/home');
     }
   }
 
-  changeMode(mode: 'login' | 'register' | 'reset'): void {
+  changeMode(mode: 'login' | 'register'): void {
     this.mode = mode;
     this.password = '';
     this.confirmation = '';
+    this.showPassword = false;
     this.error = '';
-    this.feedback = '';
   }
 
   async submit(): Promise<void> {
     if (this.busy) return;
     this.error = '';
-    this.feedback = '';
     if (this.mode === 'register' && this.password !== this.confirmation) {
       this.error = 'Passwords do not match.';
       return;
     }
     this.busy = true;
     try {
-      if (this.mode === 'reset') {
-        await this.auth.resetPassword(this.email);
-        this.feedback = 'If an account exists for this email, a password reset link will be sent. Check your inbox.';
+      if (this.mode === 'register') {
+        await this.auth.register(this.email, this.password);
       } else {
-        if (this.mode === 'register') {
-          await this.auth.register(this.email, this.password);
-        } else {
-          await this.auth.login(this.email, this.password);
-        }
-        this.password = '';
-        this.confirmation = '';
-        this.changeDetector.markForCheck();
-        await this.nav.navigateRoot('/home');
+        await this.auth.login(this.email, this.password);
       }
+      this.password = '';
+      this.confirmation = '';
+      this.showPassword = false;
+      this.changeDetector.markForCheck();
+      await this.nav.navigateRoot('/home');
     } catch (error) {
       this.error = authErrorMessage(error);
     } finally {
