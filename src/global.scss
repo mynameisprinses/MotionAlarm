@@ -7,6 +7,9 @@
 body {
   margin: 0;
 }
+ion-alert {
+  --ion-text-color-step-450: var(--muted);
+}
 button,
 select {
   font: inherit;
@@ -27,6 +30,6 @@ select:focus-visible,
 input:focus-visible,
 ion-button:focus-visible,
 ion-toggle:focus-visible {
-  outline: 3px solid #215c43;
+  outline: 3px solid var(--ion-color-primary);
   outline-offset: 4px;
 }

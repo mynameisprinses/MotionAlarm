@@ -12,6 +12,20 @@
   <main class="page-shell">
     <section class="settings-panel" aria-labelledby="settings-heading">
       <h1 id="settings-heading">Settings</h1>
+      <div class="setting appearance-setting">
+        <label for="appearance">Appearance</label>
+        <p id="appearance-help">Choose a theme for this device. Your choice is saved automatically.</p>
+        <select
+          id="appearance"
+          [ngModel]="theme.mode()"
+          (ngModelChange)="theme.setMode($event)"
+          aria-describedby="appearance-help"
+        >
+          <option value="system">Use device setting</option>
+          <option value="light">Light</option>
+          <option value="dark">Dark</option>
+        </select>
+      </div>
       <p class="intro">Choose how MotionAlarm responds to movement.</p>
       @if (!ready && !error) {
       <p role="status">Loading monitoring settings…</p>

@@ -1,5 +1,5 @@
 ion-toolbar {
-  --background: #fff;
+  --background: var(--surface);
   border-bottom: 1px solid var(--line);
 }
 .topbar {
@@ -22,7 +22,7 @@ ion-back-button {
 }
 .history-panel {
   border: 1px solid var(--line);
-  background: #fff;
+  background: var(--surface);
   border-radius: 14px;
 }
 .history-heading {
@@ -49,8 +49,8 @@ ion-back-button {
   line-height: 1.7;
 }
 .history-count {
-  background: #edf1ee;
-  color: #46544c;
+  background: var(--surface-subtle);
+  color: var(--muted);
   border-radius: 5px;
   min-width: 25px;
   padding: 3px 6px;
@@ -92,8 +92,8 @@ ion-button {
   min-height: 44px;
   padding: 8px;
   color: var(--ion-text-color);
-  background: #fff;
-  border: 1px solid #7b8c80;
+  background: var(--surface);
+  border: 1px solid var(--control-border);
   border-radius: 7px;
   font: inherit;
   font-size: 13px;
@@ -104,7 +104,7 @@ ion-button {
   scrollbar-gutter: stable;
 }
 .history-scroll:focus-visible {
-  outline: 3px solid #215c43;
+  outline: 3px solid var(--ion-color-primary);
   outline-offset: -3px;
 }
 .history-filters button {
@@ -117,11 +117,11 @@ ion-button {
   font-weight: 600;
 }
 .history-filters button.selected {
-  background: #e9f4ed;
-  color: #23593e;
+  background: var(--success-background);
+  color: var(--success-text);
 }
 .history-filters button:hover {
-  background: #edf1ee;
+  background: var(--surface-subtle);
 }
 .empty-state {
   text-align: center;
@@ -129,7 +129,7 @@ ion-button {
 }
 .empty-state ion-icon {
   font-size: 32px;
-  color: #6d7e73;
+  color: var(--muted);
   margin-bottom: 12px;
 }
 .empty-state h2 {
@@ -185,15 +185,15 @@ ion-button {
   margin: 0;
 }
 .alert-status {
-  color: #9a3029;
-  background: #fceeed;
+  color: var(--danger-text);
+  background: var(--danger-background);
   padding: 4px 7px;
   font-size: 11px;
   border-radius: 4px;
 }
 .alert-status.reviewed {
-  color: #23593e;
-  background: #e9f4ed;
+  color: var(--success-text);
+  background: var(--success-background);
 }
 .alert-description p {
   font-size: 12px;
@@ -218,14 +218,14 @@ ion-button {
   line-height: 1.7;
 }
 .error-message {
-  color: #8d2924;
-  background: #fceeed;
-  border: 1px solid #edc5c1;
+  color: var(--danger-text);
+  background: var(--danger-background);
+  border: 1px solid var(--danger-border);
 }
 .feedback-message {
-  color: #23593e;
-  background: #e9f4ed;
-  border: 1px solid #bfdcc9;
+  color: var(--success-text);
+  background: var(--success-background);
+  border: 1px solid var(--success-border);
 }
 
 @media (min-width: 620px) {

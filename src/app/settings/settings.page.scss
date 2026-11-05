@@ -1,5 +1,5 @@
 ion-toolbar {
-  --background: #fff;
+  --background: var(--surface);
   border-bottom: 1px solid var(--line);
 }
 .topbar {
@@ -24,7 +24,7 @@ ion-back-button {
   padding: 24px;
   border: 1px solid var(--line);
   border-radius: 14px;
-  background: #fff;
+  background: var(--surface);
 }
 .account-panel {
   margin-top: 20px;
@@ -63,6 +63,11 @@ h1 {
   display: grid;
   gap: 22px;
 }
+.appearance-setting {
+  margin-bottom: 24px;
+  padding-bottom: 24px;
+  border-bottom: 1px solid var(--line);
+}
 .setting label {
   display: block;
   font-size: 14px;
@@ -76,8 +81,8 @@ select {
   min-height: 46px;
   padding: 10px 30px 10px 12px;
   color: var(--ion-text-color);
-  background: #fff;
-  border: 1px solid #7b8c80;
+  background: var(--surface);
+  border: 1px solid var(--control-border);
   border-radius: 7px;
   font-size: 13px;
 }
@@ -89,7 +94,7 @@ ion-toggle {
   min-height: 44px;
   font-size: 14px;
   font-weight: 600;
-  --track-background: #7b8c80;
+  --track-background: var(--control-border);
 }
 .foreground-note {
   margin: 16px 0 0;
@@ -99,9 +104,9 @@ ion-toggle {
 .error-message {
   margin: 16px 0 0;
   padding: 14px 18px;
-  color: #8d2924;
-  background: #fceeed;
-  border: 1px solid #edc5c1;
+  color: var(--danger-text);
+  background: var(--danger-background);
+  border: 1px solid var(--danger-border);
   border-radius: 8px;
   font-size: 13px;
   line-height: 1.7;

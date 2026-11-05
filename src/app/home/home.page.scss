@@ -1,5 +1,5 @@
 ion-toolbar {
-  --background: #fff;
+  --background: var(--surface);
   border-bottom: 1px solid var(--line);
 }
 .topbar {
@@ -76,7 +76,7 @@ h1 {
 }
 .monitor-panel {
   border: 1px solid var(--line);
-  background: #fff;
+  background: var(--surface);
   border-radius: 14px;
 }
 .monitor-panel {
@@ -111,8 +111,8 @@ h2 {
   margin: 0 auto 20px;
   display: grid;
   place-items: center;
-  background: #f1f4f2;
-  color: #66746e;
+  background: var(--surface-subtle);
+  color: var(--muted);
   border-radius: 24px;
 }
 .status-symbol ion-icon {
@@ -157,22 +157,22 @@ ion-button {
   line-height: 1.6;
 }
 .is-armed {
-  border-color: #74b99a;
+  border-color: var(--armed-border);
 }
 .is-armed .status-symbol {
   color: var(--ion-color-primary);
-  background: #e9f4ed;
+  background: var(--success-background);
 }
 .is-armed .state-label {
   color: var(--ion-color-primary);
   font-weight: 600;
 }
 .is-alert {
-  border-color: #d37c78;
+  border-color: var(--alert-border);
 }
 .is-alert .status-symbol {
   color: var(--ion-color-danger);
-  background: #fceeed;
+  background: var(--danger-background);
 }
 .is-alert .state-label {
   color: var(--ion-color-danger);
@@ -225,14 +225,14 @@ meter {
   line-height: 1.7;
 }
 .error-message {
-  color: #8d2924;
-  background: #fceeed;
-  border: 1px solid #edc5c1;
+  color: var(--danger-text);
+  background: var(--danger-background);
+  border: 1px solid var(--danger-border);
 }
 .feedback-message {
-  color: #23593e;
-  background: #e9f4ed;
-  border: 1px solid #bfdcc9;
+  color: var(--success-text);
+  background: var(--success-background);
+  border: 1px solid var(--success-border);
 }
 
 @media (min-width: 620px) {

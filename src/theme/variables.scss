@@ -1,10 +1,25 @@
-:root {
+@use 'sass:color';
+
+@mixin ionic-surfaces($background, $text) {
+  --ion-background-color: #{$background};
+  --ion-background-color-rgb:
+    #{color.channel($background, 'red', $space: rgb)}, #{color.channel($background, 'green', $space: rgb)},
+    #{color.channel($background, 'blue', $space: rgb)};
+  --ion-text-color: #{$text};
+  --ion-text-color-rgb:
+    #{color.channel($text, 'red', $space: rgb)}, #{color.channel($text, 'green', $space: rgb)},
+    #{color.channel($text, 'blue', $space: rgb)};
+
+  @for $index from 1 through 19 {
+    $step: $index * 50;
+    --ion-background-color-step-#{$step}: #{color.mix($text, $background, $weight: $index * 5%)};
+    --ion-text-color-step-#{$step}: #{color.mix($background, $text, $weight: $index * 5%)};
+  }
+}
+
+@mixin light-theme {
+  @include ionic-surfaces(#f6f8f5, #202e26);
   color-scheme: light;
-  --ion-font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-  --ion-background-color: #f6f8f5;
-  --ion-background-color-rgb: 246, 248, 245;
-  --ion-text-color: #202e26;
-  --ion-text-color-rgb: 32, 46, 38;
   --ion-color-primary: #286345;
   --ion-color-primary-rgb: 40, 99, 69;
   --ion-color-primary-contrast: #ffffff;
@@ -19,4 +34,66 @@
   --ion-color-danger-tint: #b34a45;
   --muted: #5e6c63;
   --line: #dce3dd;
+  --surface: #ffffff;
+  --surface-subtle: #f1f4f2;
+  --control-border: #7b8c80;
+  --success-text: #23593e;
+  --success-background: #e9f4ed;
+  --success-border: #bfdcc9;
+  --armed-border: #74b99a;
+  --danger-text: #8d2924;
+  --danger-background: #fceeed;
+  --danger-border: #edc5c1;
+  --alert-border: #d37c78;
+}
+
+@mixin dark-theme {
+  @include ionic-surfaces(#141d18, #e5eee7);
+  color-scheme: dark;
+  --ion-color-primary: #91d4a9;
+  --ion-color-primary-rgb: 145, 212, 169;
+  --ion-color-primary-contrast: #102418;
+  --ion-color-primary-contrast-rgb: 16, 36, 24;
+  --ion-color-primary-shade: #80bb95;
+  --ion-color-primary-tint: #9cd8b2;
+  --ion-color-danger: #f4a5a0;
+  --ion-color-danger-rgb: 244, 165, 160;
+  --ion-color-danger-contrast: #321513;
+  --ion-color-danger-contrast-rgb: 50, 21, 19;
+  --ion-color-danger-shade: #d7918d;
+  --ion-color-danger-tint: #f5aeaa;
+  --muted: #b3c1b7;
+  --line: #3a4a3f;
+  --surface: #1d2a22;
+  --surface-subtle: #25332c;
+  --control-border: #718579;
+  --success-text: #a8dfbc;
+  --success-background: #233e30;
+  --success-border: #4f7b61;
+  --armed-border: #74b99a;
+  --danger-text: #f4b5af;
+  --danger-background: #482925;
+  --danger-border: #86534d;
+  --alert-border: #cf827a;
+}
+
+:root {
+  @include light-theme;
+  --ion-font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  --ion-toolbar-background: var(--surface);
+  --ion-toolbar-color: var(--ion-text-color);
+  --ion-item-background: var(--surface);
+  --ion-card-background: var(--surface);
+  --ion-overlay-background-color: var(--surface);
+  --ion-border-color: var(--line);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme]) {
+    @include dark-theme;
+  }
+}
+
+:root[data-theme='dark'] {
+  @include dark-theme;
 }

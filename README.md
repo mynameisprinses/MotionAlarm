@@ -33,6 +33,7 @@ Log in or register with an email and password first. Each account has its own mo
 5. Tap **View alert history** to open the scrollable history page. Its date filter defaults to today on the phone. Choose another date, **Today**, or **All dates**, and combine that with New/Reviewed status filters. The Back button returns to the monitor.
 6. **Delete** removes one log after confirmation. **Clear history** removes all logs after confirmation.
 7. Tap the **Settings gear** at the top to change sensitivity, vibration, or sound. Controls are disabled while monitoring. The selected values remain available while navigating between pages.
+8. In **Settings → Appearance**, choose **Light**, **Dark**, or **Use device setting**. The default follows your device. Your choice is saved on this device and also applies to the login page. Appearance can change while monitoring.
 
 On a computer, use **Test alarm** to preview sound and vibration without an accelerometer. Tests never create history records, locally or in Firestore.
 
@@ -66,7 +67,8 @@ Existing history from the earlier account-free version is not automatically assi
 | `src/app/home/native-alarm.ts` | Typed bridge between Angular and the Android plugin |
 | `src/app/home/home.page.html` | Ionic controls and Angular conditions/loops |
 | `src/app/home/home.page.scss` | Page layout, including phone and tablet layouts |
-| `src/theme/variables.scss` | Light theme, green controls, and red alerts |
+| `src/theme/variables.scss` | Shared light/dark colors, green controls, and red alerts |
+| `src/app/theme/theme.service.ts` | Saved appearance choice, device theme changes, and native status bar style |
 | `capacitor.config.ts` | Native app name and app ID |
 | `android/` | Generated Android project |
 | `android/app/src/main/java/com/motionalarm/app/MotionAlarmService.java` | Native background sensor, countdown, notification, vibration, and alarm |

@@ -16,6 +16,7 @@ import {
 
 import { AuthService } from '../auth/auth.service';
 import { NATIVE_ALARM } from '../home/native-alarm';
+import { ThemeService } from '../theme/theme.service';
 
 import { AlarmSettingsService } from './alarm-settings.service';
 
@@ -28,6 +29,7 @@ import { AlarmSettingsService } from './alarm-settings.service';
   imports: [FormsModule, IonBackButton, IonButton, IonButtons, IonContent, IonHeader, IonToggle, IonToolbar],
 })
 export class SettingsPage implements OnInit, OnDestroy {
+  theme = inject(ThemeService);
   settings = inject(AlarmSettingsService);
   auth = inject(AuthService);
   signingOut = false;

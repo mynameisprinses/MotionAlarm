@@ -11,7 +11,7 @@
 }
 .login-panel {
   padding: 24px;
-  background: #fff;
+  background: var(--surface);
   border: 1px solid var(--line);
   border-radius: 14px;
 }
@@ -38,8 +38,8 @@ button {
   min-height: 44px;
   padding: 10px 16px;
   border-radius: 7px;
-  background: #fff;
-  border: 1px solid #7b8c80;
+  background: var(--surface);
+  border: 1px solid var(--control-border);
   color: var(--ion-text-color);
   font: inherit;
   cursor: pointer;
@@ -48,7 +48,7 @@ button {
   flex: 1;
 }
 .selected {
-  background: #e7f0e9;
+  background: var(--success-background);
   border-color: var(--ion-color-primary);
   color: var(--ion-color-primary);
 }
@@ -62,9 +62,9 @@ input {
   width: 100%;
   min-height: 46px;
   padding: 10px 12px;
-  border: 1px solid #7b8c80;
+  border: 1px solid var(--control-border);
   border-radius: 7px;
-  background: #fff;
+  background: var(--surface);
   color: var(--ion-text-color);
   font: inherit;
 }
@@ -102,12 +102,12 @@ ion-button {
   overflow-wrap: anywhere;
 }
 .error-message {
-  color: #8d2924;
-  background: #fceeed;
+  color: var(--danger-text);
+  background: var(--danger-background);
 }
 .feedback-message {
-  color: #23573d;
-  background: #e7f0e9;
+  color: var(--success-text);
+  background: var(--success-background);
 }
 @media (min-width: 620px) {
   .login-shell {
