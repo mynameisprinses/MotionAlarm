@@ -10,6 +10,9 @@ body {
 ion-alert {
   --ion-text-color-step-450: var(--muted);
 }
+ion-alert.sign-out-confirmation .alert-button {
+  min-height: 44px;
+}
 button,
 select {
   font: inherit;

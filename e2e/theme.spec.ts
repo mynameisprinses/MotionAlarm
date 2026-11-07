@@ -35,6 +35,7 @@ test('appearance follows the device and explicit choices survive navigation, rel
   await expectTheme(page, 'light');
   await appearance.selectOption('dark');
   await page.getByRole('button', { name: 'Sign out', exact: true }).click();
+  await page.getByRole('alertdialog').getByRole('button', { name: 'Sign out', exact: true }).click();
   await expect(page).toHaveURL(/\/login$/);
   await expectTheme(page, 'dark');
   await page.reload();
@@ -92,7 +93,24 @@ for (const theme of ['light', 'dark'] as const) {
     await expect(dialog).toHaveCount(0);
 
     await page.goto('/settings');
-    await page.getByRole('button', { name: 'Sign out', exact: true }).click();
+    await page.setViewportSize({ width: 320, height: 800 });
+    const signOut = page.getByRole('button', { name: 'Sign out', exact: true });
+    await signOut.focus();
+    await page.keyboard.press('Enter');
+    const signOutDialog = page.getByRole('alertdialog', { name: 'Sign out of this device?' });
+    await expect(signOutDialog).toBeVisible();
+    await expect(signOutDialog).toHaveCSS(
+      'background-color',
+      theme === 'dark' ? 'rgb(29, 42, 34)' : 'rgb(255, 255, 255)',
+    );
+    const confirm = signOutDialog.getByRole('button', { name: 'Sign out', exact: true });
+    await expect(confirm).toBeInViewport();
+    expect((await confirm.boundingBox())?.height).toBeGreaterThanOrEqual(44);
+    await page.keyboard.press('Escape');
+    await expect(signOutDialog).toHaveCount(0);
+    await expect(signOut).toBeFocused();
+    await page.keyboard.press('Enter');
+    await confirm.click();
     await expect(page.locator('.login-panel')).toBeVisible();
     await expectTheme(page, theme);
     await expect(page.getByLabel('Email', { exact: true })).toHaveCSS(

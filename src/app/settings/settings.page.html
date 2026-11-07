@@ -72,8 +72,11 @@
     <section class="settings-panel account-panel" aria-labelledby="account-heading">
       <h2 id="account-heading">Your account</h2>
       <p class="account-email">{{ auth.user()?.email }}</p>
-      <ion-button fill="outline" [disabled]="signingOut || !ready || settings.state !== 'idle'" (click)="signOut()"
-        >{{ signingOut ? 'Signing out…' : 'Sign out' }}</ion-button
+      <ion-button
+        fill="outline"
+        [disabled]="signOutState === 'signing-out' || !ready || settings.state !== 'idle'"
+        (click)="signOut()"
+        >{{ signOutState === 'signing-out' ? 'Signing out…' : 'Sign out' }}</ion-button
       >
       @if (settings.state !== 'idle') {
       <p class="intro">Stop the motion alarm on the monitor before signing out.</p>

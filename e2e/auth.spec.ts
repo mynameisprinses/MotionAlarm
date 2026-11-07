@@ -27,6 +27,7 @@ test('registration validates confirmation, restores login, and supports signing 
   await expect(page.getByRole('button', { name: 'Motion alarm start', exact: true })).toBeVisible();
   await page.getByLabel('Open settings').click();
   await page.getByRole('button', { name: 'Sign out', exact: true }).click();
+  await page.getByRole('alertdialog').getByRole('button', { name: 'Sign out', exact: true }).click();
   await expect(page).toHaveURL(/\/login$/);
   await expect(page.getByRole('checkbox', { name: 'Show password', exact: true })).not.toBeChecked();
   await expect(page.getByLabel('Password', { exact: true })).toHaveAttribute('type', 'password');

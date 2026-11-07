@@ -176,7 +176,7 @@ test('date and status filters combine, and long lists scroll', async ({ page, re
   await expect(page.locator('.alert-row')).toHaveCount(25);
 });
 
-test('sign out clears history from view and another account has separate alerts', async ({
+test('canceling sign-out keeps the session and confirming clears account history from view', async ({
   page,
   request,
   account,
@@ -186,7 +186,17 @@ test('sign out clears history from view and another account has separate alerts'
   await expect(page.locator('.alert-row')).toHaveCount(1);
   await back(page);
   await settings(page);
-  await page.getByRole('button', { name: 'Sign out', exact: true }).click();
+  const signOut = page.getByRole('button', { name: 'Sign out', exact: true });
+  const dialog = page.getByRole('alertdialog', { name: 'Sign out of this device?' });
+  await signOut.click();
+  await expect(dialog).toBeVisible();
+  await dialog.getByRole('button', { name: 'Cancel' }).click();
+  await expect(dialog).toHaveCount(0);
+  await expect(page).toHaveURL(/\/settings$/);
+  await page.reload();
+  await expect(page.getByText(account.email, { exact: true })).toBeVisible();
+  await signOut.click();
+  await dialog.getByRole('button', { name: 'Sign out', exact: true }).click();
   await expect(page).toHaveURL(/\/login$/);
   await expect(page.locator('.alert-row')).toHaveCount(0);
   await page.goto('/alert-history');

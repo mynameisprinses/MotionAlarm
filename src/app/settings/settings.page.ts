@@ -4,6 +4,7 @@ import { FormsModule } from '@angular/forms';
 import type { PluginListenerHandle } from '@capacitor/core';
 import { Capacitor } from '@capacitor/core';
 import {
+  AlertController,
   IonBackButton,
   IonButton,
   IonButtons,
@@ -32,7 +33,8 @@ export class SettingsPage implements OnInit, OnDestroy {
   theme = inject(ThemeService);
   settings = inject(AlarmSettingsService);
   auth = inject(AuthService);
-  signingOut = false;
+  signOutState: 'idle' | 'confirming' | 'signing-out' = 'idle';
+  private alertController = inject(AlertController);
   private nav = inject(NavController);
   nativeAndroid = Capacitor.isNativePlatform() && Capacitor.getPlatform() === 'android';
   ready = !this.nativeAndroid;
@@ -67,16 +69,30 @@ export class SettingsPage implements OnInit, OnDestroy {
   }
 
   async signOut(): Promise<void> {
-    if (this.signingOut) return;
-    this.signingOut = true;
-    this.error = '';
+    if (this.signOutState !== 'idle') return;
+    this.signOutState = 'confirming';
     try {
+      const dialog = await this.alertController.create({
+        header: 'Sign out of this device?',
+        cssClass: 'sign-out-confirmation',
+        buttons: [
+          { text: 'Cancel', role: 'cancel' },
+          { text: 'Sign out', role: 'confirm' },
+        ],
+      });
+      await dialog.present();
+      const { role } = await dialog.onDidDismiss();
+      if (role !== 'confirm') return;
+
+      this.signOutState = 'signing-out';
+      this.error = '';
+      this.changeDetector.markForCheck();
       await this.auth.logout();
       await this.nav.navigateRoot('/login');
     } catch (error) {
       this.error = error instanceof Error ? error.message : 'Could not sign out. Try again.';
     } finally {
-      this.signingOut = false;
+      this.signOutState = 'idle';
       this.changeDetector.markForCheck();
     }
   }
