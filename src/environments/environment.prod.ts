@@ -1,5 +1,5 @@
 export const environment = {
   production: true,
-  // Set this to your hosted HTTPS API URL before building the Android app.
-  apiBaseUrl: 'https://motionalarm.onrender.com/api',
+  supabaseUrl: 'https://cluavgnjyejsxwhzjhui.supabase.co',
+  supabasePublishableKey: 'sb_publishable_56Xi07yrUZANb1cU6zzVuw_7_R5HLau',
 };

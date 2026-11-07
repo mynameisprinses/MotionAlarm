@@ -29,8 +29,8 @@ export default defineConfig({
   ],
   webServer: [
     {
-      command: 'node api/server.mjs --test',
-      url: 'http://127.0.0.1:3001/api/health',
+      command: 'node tests/supabase-mock.mjs',
+      url: 'http://127.0.0.1:54321/health',
       reuseExistingServer: false,
       timeout: 30000,
     },

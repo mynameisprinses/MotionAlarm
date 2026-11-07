@@ -1,7 +1,7 @@
 import { TestBed } from '@angular/core/testing';
 import { Capacitor } from '@capacitor/core';
 
-import { mockAuth } from '../../testing/firebase-mocks';
+import { mockAuth } from '../../testing/auth-mocks';
 import { ApiError, ApiService } from '../api/api-request';
 import { AuthService } from '../auth/auth.service';
 import { NATIVE_ALARM } from '../home/native-alarm';
@@ -31,7 +31,7 @@ describe('REST alert history', () => {
     vi.spyOn(Capacitor, 'isNativePlatform').mockReturnValue(android);
     vi.spyOn(Capacitor, 'getPlatform').mockReturnValue(android ? 'android' : 'web');
     vi.spyOn(navigator, 'onLine', 'get').mockReturnValue(true);
-    vi.mocked(apiRequest).mockResolvedValue({ alerts: [] });
+    vi.mocked(apiRequest).mockResolvedValue([]);
     auth = mockAuth();
     native.getState.mockResolvedValue({ alerts: [], historyOwner: 'user-a' });
     TestBed.configureTestingModule({
@@ -58,9 +58,9 @@ describe('REST alert history', () => {
     history.createAlert('Movement', 2.5);
     await history.refresh();
     expect(apiRequest).toHaveBeenCalledWith(
-      '/alerts',
+      '/rest/v1/rpc/record_movement_alert',
       'POST',
-      expect.objectContaining({ source: 'Movement' }),
+      expect.objectContaining({ p_strength: 2.5 }),
       'test-token',
     );
     expect(history.hasPendingWrites).toBe(false);
@@ -76,17 +76,23 @@ describe('REST alert history', () => {
     expect(history.alerts[0].status).toBe('Reviewed');
     expect(history.hasPendingWrites).toBe(true);
     expect(apiRequest).not.toHaveBeenCalled();
-    expect(JSON.parse(localStorage.getItem('motion-alarm-history-user-a')!).changes).toHaveLength(2);
+    expect(JSON.parse(localStorage.getItem('motion-alarm-supabase-history-user-a')!).changes).toHaveLength(2);
     vi.spyOn(navigator, 'onLine', 'get').mockReturnValue(true);
     await history.refresh();
     expect(apiRequest).toHaveBeenNthCalledWith(
       1,
-      '/alerts',
+      '/rest/v1/rpc/record_movement_alert',
       'POST',
-      expect.objectContaining({ id: alert.id }),
+      expect.objectContaining({ p_id: alert.id }),
       'test-token',
     );
-    expect(apiRequest).toHaveBeenNthCalledWith(2, '/alerts/' + alert.id, 'PATCH', { status: 'Reviewed' }, 'test-token');
+    expect(apiRequest).toHaveBeenNthCalledWith(
+      2,
+      '/rest/v1/alerts?id=eq.' + alert.id,
+      'PATCH',
+      { status: 'Reviewed' },
+      'test-token',
+    );
     expect(history.hasPendingWrites).toBe(false);
   });
 
@@ -104,7 +110,7 @@ describe('REST alert history', () => {
     await Promise.resolve();
     auth.user.set(null);
     TestBed.tick();
-    finish({ alerts: [movement] });
+    finish([{ ...movement, created_at: movement.createdAt }]);
     await request;
     expect(history.alerts).toEqual([]);
   });
@@ -126,7 +132,16 @@ describe('REST alert history', () => {
     expect(history.alerts).toEqual([]);
     native.getState.mockResolvedValue({ alerts: [movement], historyOwner: 'user-a' });
     await history.refresh();
-    expect(apiRequest).toHaveBeenCalledWith('/alerts', 'POST', movement, 'test-token');
+    expect(apiRequest).toHaveBeenCalledWith(
+      '/rest/v1/rpc/record_movement_alert',
+      'POST',
+      {
+        p_id: movement.id,
+        p_created_at: movement.createdAt,
+        p_strength: movement.strength,
+      },
+      'test-token',
+    );
     expect(native.deleteAlert).toHaveBeenCalledWith({ id: movement.id, userId: 'user-a' });
   });
 

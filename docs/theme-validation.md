@@ -13,7 +13,7 @@ The subsequent login and registration update is recorded in [auth-form-validatio
 - PASS: screenshot review covers light and dark monitoring, Settings, history, login, and deletion dialogs. Browser screenshots are generated in `test-results/theme-*` by [theme.spec.ts](../e2e/theme.spec.ts).
 - PASS: eleven foreground/background pairs per theme meet 4.5:1 text contrast. The lowest checked ratio is 4.99:1 in light and 6.63:1 in dark. Dialog messages use the same secondary-text color as other surfaces, with browser assertions for their actual color.
 
-The browser tests use local Firebase emulators with the workspace's Java 21 runtime. Native status bar icon styling is implemented through Capacitor; physical-device appearance and an updated APK are outside this web verification.
+The browser tests used isolated local test services. Native status bar icon styling is implemented through Capacitor; physical-device appearance and an updated APK are outside this web verification.
 
 ## Delivery gate: hard requirements
 

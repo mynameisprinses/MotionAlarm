@@ -1,7 +1,7 @@
 import { TestBed } from '@angular/core/testing';
 import { provideRouter } from '@angular/router';
 
-import { mockAuth } from '../testing/firebase-mocks';
+import { mockAuth } from '../testing/auth-mocks';
 
 import { AppComponent } from './app.component';
 import { AuthService } from './auth/auth.service';

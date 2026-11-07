@@ -21,6 +21,7 @@ export class LoginPage {
   showPassword = false;
   busy = false;
   error = '';
+  feedback = '';
   private nav = inject(NavController);
   private changeDetector = inject(ChangeDetectorRef);
 
@@ -38,11 +39,13 @@ export class LoginPage {
     this.confirmation = '';
     this.showPassword = false;
     this.error = '';
+    this.feedback = '';
   }
 
   async submit(): Promise<void> {
     if (this.busy) return;
     this.error = '';
+    this.feedback = '';
     if (this.mode === 'register' && this.password !== this.confirmation) {
       this.error = 'Passwords do not match.';
       return;
@@ -50,7 +53,12 @@ export class LoginPage {
     this.busy = true;
     try {
       if (this.mode === 'register') {
-        await this.auth.register(this.email, this.password);
+        const loggedIn = await this.auth.register(this.email, this.password);
+        if (!loggedIn) {
+          this.changeMode('login');
+          this.feedback = 'Check your email for a confirmation link, then return here to log in.';
+          return;
+        }
       } else {
         await this.auth.login(this.email, this.password);
       }

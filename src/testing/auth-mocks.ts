@@ -11,7 +11,6 @@ export function mockAuth(uid = 'user-a'): {
   ready: Promise<void>;
   login: ReturnType<typeof vi.fn>;
   register: ReturnType<typeof vi.fn>;
-  resetPassword: ReturnType<typeof vi.fn>;
   logout: ReturnType<typeof vi.fn>;
   getToken: ReturnType<typeof vi.fn>;
   expireLogin: ReturnType<typeof vi.fn>;
@@ -23,7 +22,6 @@ export function mockAuth(uid = 'user-a'): {
     ready: Promise.resolve(),
     login: vi.fn(),
     register: vi.fn(),
-    resetPassword: vi.fn(),
     logout: vi.fn(),
     getToken: vi.fn().mockResolvedValue('test-token'),
     expireLogin: vi.fn(),

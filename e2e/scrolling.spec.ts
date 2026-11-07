@@ -1,4 +1,4 @@
-import { expect, test, seedAlert } from './firebase';
+import { expect, test, seedAlert } from './supabase';
 
 test('short screens can scroll to the end of the monitor, Settings, and history', async ({ page }) => {
   const browserErrors: string[] = [];

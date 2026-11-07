@@ -1,6 +1,6 @@
 import type { Page } from '@playwright/test';
 
-import { test, expect, seedAlert, savedCount, createAccount, logIn } from './firebase';
+import { test, expect, seedAlert, savedCount, createAccount, logIn } from './supabase';
 
 declare global {
   interface Window {
@@ -71,11 +71,7 @@ async function settings(page: Page): Promise<void> {
   await expect(page).toHaveURL(/\/settings$/);
 }
 
-test('Firestore history supports review, filtering, reload, deletion and clearing', async ({
-  page,
-  request,
-  account,
-}) => {
+test('REST history supports review, filtering, reload, deletion and clearing', async ({ page, request, account }) => {
   await seedAlert(request, account.uid, 'first');
   await seedAlert(request, account.uid, 'second');
   await history(page);
@@ -135,6 +131,11 @@ test('test alarm plays sound and vibration without storing any alerts', async ({
   await settings(page);
   await page.getByRole('switch', { name: 'Sound on alert' }).click();
   await back(page);
+  await expect(
+    page.getByText('Try the alarm sound and vibration without a motion sensor.', { exact: false }),
+  ).toHaveCount(0);
+  await expect(page.getByText('Stopping asks for your screen-lock PIN', { exact: false })).toHaveCount(0);
+  await expect(page.getByText('Android keeps monitoring with a visible notification', { exact: false })).toHaveCount(0);
   await page.getByRole('button', { name: 'Test alarm', exact: true }).click();
   await history(page);
   await expect(page.getByRole('heading', { name: 'No alerts yet' })).toBeVisible();

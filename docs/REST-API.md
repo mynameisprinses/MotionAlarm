@@ -1,123 +1,68 @@
-# MotionAlarm REST API
+# Supabase REST walkthrough
+
+MotionAlarm sends HTTPS requests directly from Ionic Angular to Supabase using `fetch()`. The app needs only the project URL and a publishable API key. Authenticated data requests also carry the signed-in user's access token.
 
 ```text
-Ionic app → Express REST API → Firebase Authentication / Firestore REST APIs
+Ionic page → Angular service → Supabase REST endpoint → PostgreSQL
 ```
 
-The app sends JSON using `fetch()`. It no longer imports Firebase's JavaScript SDK. Firebase still checks each user's token and applies `firestore.rules`.
+## Authentication
 
-## Run locally
-
-Open two terminals in the project folder:
-
-```sh
-# Terminal 1: API on port 3000
-npm run api
-```
-
-```sh
-# Terminal 2: Ionic/Angular on port 4200
-npm start
-```
-
-Open `http://localhost:4200`. Check the server at `http://localhost:3000/api/health`.
-
-Your project ID and public Web API key are already in `api/config.mjs`. Enable Email/Password authentication, create the default Firestore database, and publish `firestore.rules` in Firebase Console. No service-account key or Google password is needed. Optional overrides can be copied from `api/.env.example` to the Git-ignored `api/.env`.
-
-## Files to read
-
-| File | What to learn from it |
-| --- | --- |
-| `api/app.mjs` | The HTTP routes, input checks, and JSON responses |
-| `api/firebase.mjs` | Small functions that call Firebase and translate its document format |
-| `api/config.mjs` | Project configuration and allowed browser origins |
-| `api/server.mjs` | Starting and stopping the HTTP server |
-| `src/app/api/api-request.ts` | The app's one HTTP helper, `ApiService.request()` |
-| `src/app/auth/auth.service.ts` | Login, registration, saved sessions, and token refresh |
-| `src/app/alert-history/alert-history.service.ts` | Local history, offline changes, and calls to the alert routes |
-
-There is no controller/repository framework or generated API layer. Start with one route in `app.mjs`, then follow its function into `firebase.mjs`.
-
-## Routes
-
-All paths start with `/api`.
-
-| Method | Path | Request / purpose |
+| Method | Endpoint | Body |
 | --- | --- | --- |
-| GET | `/health` | Check the server |
-| POST | `/auth/register` | `{ email, password }` |
-| POST | `/auth/login` | `{ email, password }` |
-| POST | `/auth/refresh` | `{ refreshToken }` |
-| POST | `/auth/password-reset` | `{ email }` |
-| GET | `/auth/me` | Read the verified current user |
-| GET | `/alerts` | Read the current user's alerts |
-| POST | `/alerts` | Save a new movement alert |
-| PATCH | `/alerts/:id` | `{ status: "New" }` or `{ status: "Reviewed" }` |
-| DELETE | `/alerts/:id` | Delete one alert |
-| DELETE | `/alerts` | Clear account history |
+| POST | `/auth/v1/signup` | `{ email, password }` |
+| POST | `/auth/v1/token?grant_type=password` | `{ email, password }` |
+| POST | `/auth/v1/token?grant_type=refresh_token` | `{ refresh_token }` |
+| POST | `/auth/v1/logout?scope=local` | No body |
 
-Register, login, and refresh return a session containing `user: { uid, email }`, `idToken`, `refreshToken`, and `expiresAt` in milliseconds. Keep actual tokens private. Protected requests send:
+Successful login returns `access_token`, `refresh_token`, `expires_in`, and `user`. The auth service converts these fields to the app's session structure, remembers the session, and refreshes it before expiry. An account change during refresh cannot overwrite a newer login.
 
-```http
-Authorization: Bearer YOUR_ID_TOKEN
-```
+Registration may return a user without a session when email confirmation is required. The app then clears the passwords, returns to login, and displays confirmation instructions. The project owner configures the email provider, confirmation behavior, Site URL, and redirect URLs in Supabase Auth.
 
-The server checks that token with Firebase Authentication and gets the user ID from the verified response. The request cannot choose another person's ID. The same token goes to Firestore, so its security rules also apply. The API has no administrator credential that bypasses those rules.
+The app requests server logout when online and clears the local session. Network failure does not prevent local sign-out. Account caches remain separate, and sign-out is blocked during monitoring.
 
-`POST /alerts` accepts exactly these fields:
+## Alert CRUD
 
-```json
-{
-  "id": "a-stable-unique-id",
-  "createdAt": "2026-11-04T08:00:00.000Z",
-  "source": "Movement",
-  "status": "New",
-  "strength": 2.5
-}
-```
+| Method | Endpoint | Purpose |
+| --- | --- | --- |
+| GET | `/rest/v1/alerts?select=id,created_at,source,status,strength&order=created_at.desc,id.desc&limit=1000&offset=0` | Read a page of the current account's alerts |
+| POST | `/rest/v1/rpc/record_movement_alert` | Atomically save an alert and its upload receipt |
+| PATCH | `/rest/v1/alerts?id=eq.ALERT_ID` | Change `{ "status": "Reviewed" }` or `{ "status": "New" }` |
+| DELETE | `/rest/v1/alerts?id=eq.ALERT_ID` | Delete one alert |
+| DELETE | `/rest/v1/alerts?user_id=eq.ACCOUNT_ID` | Clear the current account's history |
 
-It returns HTTP 201 and `{ "id": "a-stable-unique-id" }`. Retrying the same ID does not duplicate an alert. A receipt at `users/{uid}/imports/{id}` also prevents a retry from overwriting a review or recreating a deleted event. Receipts contain only the event ID and remain after history is cleared. Test events are rejected with HTTP 400.
+The create request body is `{ "p_id": "EVENT_ID", "p_created_at": "ISO_TIMESTAMP", "p_strength": 2.5 }`. Its owner always comes from the validated token through `auth.uid()`. Source and initial status are database defaults. The app cannot use this function to save a Test record.
 
-`GET /alerts` returns `{ "alerts": [...] }`. Successful deletes return HTTP 204 without a body. Errors return `{ "error": { "code": "...", "message": "..." } }`. Invalid input returns 400; invalid login returns 401; denied Firestore access returns 403; an unavailable Firebase service returns 503.
+The upload function and table constraints run in one PostgreSQL transaction. If validation fails, the receipt is also rolled back. If a receipt already exists, retrying has no effect, even when the alert was deleted.
 
-## Follow a button click
+Data API reads return ordinary JSON arrays. The history service converts `created_at` to the UI's `createdAt`, reads subsequent pages when needed, and combines the result with pending local edits. Successful minimal writes can have an empty response body. Error parsing supports Supabase Auth and PostgreSQL/PostgREST error shapes.
 
-For **Mark reviewed**:
+## Follow a review button
 
-1. The page calls `history.toggleStatus(alert)`.
-2. The history service updates the local list and queues a PATCH request.
-3. `auth.getToken(uid)` supplies a token, refreshing it if needed.
-4. `ApiService.request()` sends `PATCH /api/alerts/the-id` with the status and bearer token.
-5. Express verifies the login and calls `updateAlert()`.
-6. Firebase checks the rules and saves the status.
-7. The app removes the acknowledged change from its queue and reloads history.
+1. The history page calls `toggleStatus(alert)`.
+2. The history service updates its local cache and queues the status change.
+3. The auth service supplies a valid access token.
+4. `ApiService.request()` sends a PATCH to the alert's REST URL with `apikey` and `Authorization: Bearer ACCESS_TOKEN` headers.
+5. PostgreSQL checks grants, the user's row-level policy, and the status constraint.
+6. After success, the app removes the queued change and refreshes the list.
 
-## Offline and sign-out
+Offline changes remain queued. Returning online retries them in order. Native background events are acknowledged only after their upload succeeds.
 
-Each account has its own local cache and queue. New alerts, reviews, and deletions update the screen immediately and sync in order. Failed requests stay queued. The app refreshes every five seconds while visible, when a page opens, and when the connection returns.
+## Database access
 
-Android keeps its account-specific native queue for background movement. A native entry is removed only after the API accepts it. Test alarms never enter either queue.
+The migration enables RLS on both public tables and explicitly grants the minimum operations used by the app. Each row must belong to `auth.uid()`. Authenticated users can update only the status column. Anonymous users cannot read or write alerts or receipts. The upload function uses `security invoker`, so it cannot bypass those account policies.
 
-Sign-out clears the local login tokens; it needs no API request because there is no separate server session. Issued Firebase ID tokens expire on their normal schedule. Stop an active alarm before signing out. Use a trusted device because login tokens and cached alerts are saved locally.
+Use the public publishable key in client configuration. Administrative credentials are not used by this app. Apply and verify the migration before connecting a hosted project.
 
-The old SDK's IndexedDB cache is not migrated. Synced alerts remain in Firestore. Before upgrading an older installation, reconnect it so any still-pending SDK writes can finish.
-
-## Installed Android app
-
-The phone needs a reachable HTTPS API. `localhost` on a phone refers to the phone itself.
-
-1. Host this project on a Node service with HTTPS and start it with `npm run api`.
-2. Set `ALLOWED_ORIGINS` to your hosted web app's origin and the installed app's origin, typically `https://localhost` for Capacitor Android.
-3. Set `apiBaseUrl` in `src/environments/environment.prod.ts` to the full hosted HTTPS URL ending in `/api`.
-4. Run `npm run android:sync`, then rebuild/install the app.
-
-The production URL is empty until you have a real host. No hosting or Firebase rules deployment has been performed automatically.
-
-## Tests
+## Run and verify
 
 ```sh
+npm start
+npm run test:database
 npm run test:unit
 npm run test:e2e
 ```
 
-The second command needs Java 21 or newer. It starts local Auth/Firestore emulators, checks the rules, exercises the REST routes, then runs desktop/phone browser checks. Everything uses `demo-motion-alarm`. The test API refuses to start without a demo project and both emulators.
+The browser fixture is isolated at `http://127.0.0.1:54321`; the browser app runs on port 4201 with `environment.e2e.ts`. It tests REST request behavior without sending test accounts to a hosted project. The database test separately executes the migration and real PostgreSQL permissions. Neither test replaces checking the selected hosted project's configuration and deployed policies.
+
+References: [Supabase REST API](https://supabase.com/docs/guides/api), [database access and grants](https://supabase.com/docs/guides/api/securing-your-api), [row-level security](https://supabase.com/docs/guides/database/postgres/row-level-security).

@@ -74,6 +74,8 @@
       </form>
       @if (error || auth.error()) {
       <p class="error-message" role="alert">{{ error || auth.error() }}</p>
+      } @if (feedback) {
+      <p class="field-help" role="status">{{ feedback }}</p>
       }
     </section>
   </main>

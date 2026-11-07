@@ -200,22 +200,10 @@ meter {
   height: 10px;
   accent-color: var(--ion-color-primary);
 }
-.test-section p,
-.foreground-note {
-  font-size: 12px;
-  color: var(--muted);
-  line-height: 1.7;
-}
 .test-section {
   border-top: 1px solid var(--line);
   padding-top: 22px;
   margin-top: 20px;
-}
-.test-section p {
-  margin: 8px 0 12px;
-}
-.foreground-note {
-  margin: 16px 0 0;
 }
 .message {
   margin: 16px 0 0;

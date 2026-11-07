@@ -96,17 +96,9 @@
         >
         }
         <p class="monitor-footnote">5 seconds to set your phone down. One alert per session.</p>
-        @if (nativeAndroid) {
-        <p class="monitor-footnote">
-          Stopping asks for your screen-lock PIN, pattern, or password. With no screen lock, it stops immediately.
-        </p>
-        } @else {
-        <p class="monitor-footnote">Browser preview: screen-lock verification is available in the Android app.</p>
-        }
       </section>
 
       <section class="test-section" aria-label="Test alerts">
-        <p>Try the alarm sound and vibration without a motion sensor. Tests are not saved to history.</p>
         <ion-button
           fill="outline"
           expand="block"
@@ -114,12 +106,6 @@
           (click)="createTestAlert()"
           >Test alarm</ion-button
         >
-        @if (nativeAndroid) {
-        <p class="foreground-note">
-          Android keeps monitoring with a visible notification, including while the screen is locked. This uses extra
-          battery. Force-stopping the app or Android stopping its service ends monitoring.
-        </p>
-        }
       </section>
     </div>
 

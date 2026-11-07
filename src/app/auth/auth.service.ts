@@ -1,6 +1,7 @@
 import { inject, Injectable, signal } from '@angular/core';
 import { Capacitor } from '@capacitor/core';
 
+import { environment } from '../../environments/environment';
 import { ApiError, ApiService } from '../api/api-request';
 import { NATIVE_ALARM } from '../home/native-alarm';
 import { AlarmSettingsService } from '../settings/alarm-settings.service';
@@ -11,9 +12,16 @@ export interface AccountUser {
 }
 export interface LoginSession {
   user: AccountUser;
-  idToken: string;
+  accessToken: string;
   refreshToken: string;
   expiresAt: number;
+}
+
+interface AuthResponse {
+  user?: { id: string; email?: string };
+  access_token?: string;
+  refresh_token?: string;
+  expires_in?: number;
 }
 
 @Injectable({ providedIn: 'root' })
@@ -24,7 +32,7 @@ export class AuthService {
   private readonly settings = inject(AlarmSettingsService);
   private readonly api = inject(ApiService);
   private readonly nativeAlarm = inject(NATIVE_ALARM);
-  private readonly storageKey = 'motion-alarm-login';
+  private readonly storageKey = 'motion-alarm-supabase-login-' + environment.supabaseUrl;
   private session: LoginSession | null = null;
   private refreshing?: Promise<void>;
 
@@ -38,15 +46,18 @@ export class AuthService {
   }
 
   async login(email: string, password: string): Promise<void> {
-    this.saveLogin(await this.api.request<LoginSession>('/auth/login', 'POST', { email: email.trim(), password }));
+    const response = await this.api.request<AuthResponse>('/auth/v1/token?grant_type=password', 'POST', {
+      email: email.trim(),
+      password,
+    });
+    this.saveLogin(this.readSession(response));
   }
 
-  async register(email: string, password: string): Promise<void> {
-    this.saveLogin(await this.api.request<LoginSession>('/auth/register', 'POST', { email: email.trim(), password }));
-  }
-
-  async resetPassword(email: string): Promise<void> {
-    await this.api.request('/auth/password-reset', 'POST', { email: email.trim() });
+  async register(email: string, password: string): Promise<boolean> {
+    const response = await this.api.request<AuthResponse>('/auth/v1/signup', 'POST', { email: email.trim(), password });
+    if (!response.access_token) return false;
+    this.saveLogin(this.readSession(response));
+    return true;
   }
 
   // Refresh expired tokens here so alert functions only need to ask for a token.
@@ -64,20 +75,27 @@ export class AuthService {
     }
     if (!this.session || this.session.user.uid !== expectedUserId)
       throw new ApiError(401, 'SESSION_CHANGED', 'Your account changed. Reopen history and try again.');
-    return this.session.idToken;
+    return this.session.accessToken;
   }
 
   private async refreshLogin(session: LoginSession): Promise<void> {
     try {
-      const refreshed = await this.api.request<LoginSession>('/auth/refresh', 'POST', {
-        refreshToken: session.refreshToken,
+      const response = await this.api.request<AuthResponse>('/auth/v1/token?grant_type=refresh_token', 'POST', {
+        refresh_token: session.refreshToken,
       });
+      const refreshed = this.readSession(response);
       if (this.session === session) {
         if (refreshed.user.uid !== session.user.uid) throw new ApiError(401, 'SESSION_CHANGED', 'Please log in again.');
         this.saveLogin(refreshed);
       }
     } catch (error) {
-      if (error instanceof ApiError && error.status >= 400 && error.status < 500 && this.session === session)
+      if (
+        error instanceof ApiError &&
+        error.status >= 400 &&
+        error.status < 500 &&
+        error.status !== 429 &&
+        this.session === session
+      )
         this.forgetLogin();
       throw error;
     }
@@ -88,12 +106,20 @@ export class AuthService {
       this.settings.applyNativeSettings(await this.nativeAlarm.getState());
     }
     if (this.settings.state !== 'idle') throw new Error('Stop the motion alarm on the monitor before signing out.');
+    if (this.session && navigator.onLine) {
+      try {
+        await this.api.request('/auth/v1/logout?scope=local', 'POST', undefined, this.session.accessToken);
+      } catch (error) {
+        if (!(error instanceof ApiError && (error.status === 0 || error.status === 401))) throw error;
+      }
+    }
     localStorage.removeItem(this.storageKey);
     this.session = null;
     this.user.set(null);
   }
 
   private saveLogin(session: LoginSession): void {
+    this.error.set('');
     try {
       localStorage.setItem(this.storageKey, JSON.stringify(session));
     } catch {
@@ -101,6 +127,18 @@ export class AuthService {
     }
     this.session = session;
     this.user.set(session.user);
+  }
+
+  private readSession(response: AuthResponse): LoginSession {
+    if (!response.user?.id || !response.access_token || !response.refresh_token || !response.expires_in) {
+      throw new ApiError(502, 'INVALID_SESSION', 'Could not read your login. Please try again.');
+    }
+    return {
+      user: { uid: response.user.id, email: response.user.email || '' },
+      accessToken: response.access_token,
+      refreshToken: response.refresh_token,
+      expiresAt: Date.now() + response.expires_in * 1000,
+    };
   }
 
   private restoreLogin(): void {
@@ -112,7 +150,7 @@ export class AuthService {
         (typeof session.user?.uid !== 'string' ||
           !session.user.uid ||
           typeof session.user.email !== 'string' ||
-          typeof session.idToken !== 'string' ||
+          typeof session.accessToken !== 'string' ||
           typeof session.refreshToken !== 'string' ||
           !Number.isFinite(session.expiresAt))
       )
@@ -146,24 +184,25 @@ export class AuthService {
 export function authErrorMessage(error: unknown): string {
   if (!(error instanceof ApiError)) return 'Could not complete the request. Please try again.';
   switch (error.code) {
-    case 'INVALID_LOGIN_CREDENTIALS':
-    case 'EMAIL_NOT_FOUND':
-    case 'INVALID_PASSWORD':
+    case 'invalid_credentials':
       return 'Email or password is incorrect.';
-    case 'EMAIL_EXISTS':
+    case 'user_already_exists':
+    case 'email_exists':
       return 'This email already has an account. Log in instead.';
-    case 'INVALID_EMAIL':
+    case 'email_address_invalid':
+    case 'validation_failed':
       return 'Enter a valid email address.';
-    case 'WEAK_PASSWORD':
-    case 'PASSWORD_DOES_NOT_MEET_REQUIREMENTS':
+    case 'weak_password':
       return 'Choose a stronger password that meets your account password policy.';
-    case 'TOO_MANY_ATTEMPTS_TRY_LATER':
+    case 'over_request_rate_limit':
+    case 'over_email_send_rate_limit':
       return 'Too many attempts. Please wait and try again.';
-    case 'OPERATION_NOT_ALLOWED':
-      return 'Email/password login is not enabled in Firebase Authentication yet.';
-    case 'CONFIGURATION_NOT_FOUND':
-      return 'Firebase Authentication is not set up for this project. Open Authentication in Firebase Console, select Get started, and enable Email/Password.';
-    case 'USER_DISABLED':
+    case 'signup_disabled':
+    case 'email_provider_disabled':
+      return 'Email/password accounts are not enabled. Please contact the app owner.';
+    case 'email_not_confirmed':
+      return 'Confirm your email address before logging in. Check your inbox for the confirmation link.';
+    case 'user_banned':
       return 'This account has been disabled.';
     default:
       return error.message;

@@ -68,21 +68,10 @@
           <p>Rings until you stop the alarm. Test alerts play for two seconds.</p>
         </div>
       </div>
-      @if (nativeAndroid) {
-      <p class="foreground-note">
-        Android keeps monitoring with a visible notification, including with the screen locked. To stop, confirm your
-        screen-lock PIN, pattern, or password in the app. Without a screen lock, stopping is immediate. Background
-        monitoring uses extra battery. Android or a force-stop can still end the service.
-      </p>
-      }
     </section>
     <section class="settings-panel account-panel" aria-labelledby="account-heading">
       <h2 id="account-heading">Your account</h2>
       <p class="account-email">{{ auth.user()?.email }}</p>
-      <p class="intro">
-        Movement alerts are saved to your account. Test alarms are never saved. Android alerts sync when the app is open
-        and connected.
-      </p>
       <ion-button fill="outline" [disabled]="signingOut || !ready || settings.state !== 'idle'" (click)="signOut()"
         >{{ signingOut ? 'Signing out…' : 'Sign out' }}</ion-button
       >

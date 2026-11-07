@@ -1,6 +1,6 @@
 import type { Page } from '@playwright/test';
 
-import { expect, test, seedAlert } from './firebase';
+import { expect, test, seedAlert } from './supabase';
 
 async function expectTheme(page: Page, theme: 'light' | 'dark'): Promise<void> {
   await expect(page.locator('html')).toHaveAttribute('data-theme', theme);

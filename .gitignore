@@ -75,5 +75,6 @@ Thumbs.db
 /blob-report/
 /playwright/.cache/
 
-# Local API configuration
-/api/.env
+# Supabase local files
+/supabase/.temp/
+/supabase/.branches/

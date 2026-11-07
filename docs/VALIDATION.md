@@ -1,5 +1,7 @@
 # MotionAlarm verification
 
+The November 7, 2026 direct Supabase REST update is recorded in [supabase-validation.md](supabase-validation.md).
+
 For the November 5, 2026 light/dark appearance update, see [theme-validation.md](theme-validation.md). The report below records the earlier application verification.
 
 Verified on November 2, 2026 (Asia/Manila).

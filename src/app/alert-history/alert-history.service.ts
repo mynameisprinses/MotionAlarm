@@ -12,6 +12,14 @@ type AlertChange =
   | { method: 'PATCH'; id: string; status: 'New' | 'Reviewed' }
   | { method: 'DELETE'; id: string };
 
+interface AlertRow {
+  id: string;
+  created_at: string;
+  source: 'Movement';
+  status: 'New' | 'Reviewed';
+  strength: number | null;
+}
+
 @Injectable({ providedIn: 'root' })
 export class AlertHistoryService implements OnDestroy {
   readonly nativeAndroid = Capacitor.isNativePlatform() && Capacitor.getPlatform() === 'android';
@@ -139,11 +147,14 @@ export class AlertHistoryService implements OnDestroy {
       while (this.changes.length > 0 && this.isCurrentUser(uid)) {
         const change = this.changes[0];
         const token = await this.auth.getToken(uid);
-        const path = change.method === 'POST' ? '/alerts' : '/alerts/' + change.id;
-        const body =
-          change.method === 'POST' ? change.alert : change.method === 'PATCH' ? { status: change.status } : undefined;
         try {
-          await this.api.request(path, change.method, body, token);
+          if (change.method === 'POST') {
+            await this.saveMovement(change.alert, token);
+          } else {
+            const path = '/rest/v1/alerts?id=eq.' + encodeURIComponent(change.id);
+            const body = change.method === 'PATCH' ? { status: change.status } : undefined;
+            await this.api.request(path, change.method, body, token);
+          }
         } catch (error) {
           if (!(error instanceof ApiError && error.status === 404 && change.method !== 'POST')) throw error;
         }
@@ -155,7 +166,7 @@ export class AlertHistoryService implements OnDestroy {
 
       for (const alert of this.nativePending()) {
         const token = await this.auth.getToken(uid);
-        await this.api.request('/alerts', 'POST', { ...alert, status: 'New' }, token);
+        await this.saveMovement(alert, token);
         if (!this.isCurrentUser(uid)) return;
         await this.nativeAlarm.deleteAlert({ id: alert.id, userId: uid });
         if (!this.isCurrentUser(uid)) return;
@@ -163,10 +174,10 @@ export class AlertHistoryService implements OnDestroy {
       }
 
       const token = await this.auth.getToken(uid);
-      const response = await this.api.request<{ alerts: MovementAlert[] }>('/alerts', 'GET', undefined, token);
+      const alerts = await this.readAlerts(token);
       if (!this.isCurrentUser(uid)) return;
       // A new local change may have arrived while the list request was in progress.
-      this.savedAlerts.set(this.applyChanges(response.alerts.filter(isMovementAlert), this.changes));
+      this.savedAlerts.set(this.applyChanges(alerts.filter(isMovementAlert), this.changes));
       this.showingCache.set(false);
       this.error.set('');
       this.saveCache(uid);
@@ -178,6 +189,41 @@ export class AlertHistoryService implements OnDestroy {
       }
     } finally {
       if (this.isCurrentUser(uid)) this.loading.set(false);
+    }
+  }
+
+  private async saveMovement(alert: MovementAlert, token: string): Promise<void> {
+    await this.api.request(
+      '/rest/v1/rpc/record_movement_alert',
+      'POST',
+      {
+        p_id: alert.id,
+        p_created_at: alert.createdAt,
+        p_strength: alert.strength,
+      },
+      token,
+    );
+  }
+
+  private async readAlerts(token: string): Promise<MovementAlert[]> {
+    const alerts: MovementAlert[] = [];
+    let offset = 0;
+    while (true) {
+      const path =
+        '/rest/v1/alerts?select=id,created_at,source,status,strength&order=created_at.desc,id.desc&limit=1000&offset=' +
+        offset;
+      const rows = await this.api.request<AlertRow[]>(path, 'GET', undefined, token);
+      for (const row of rows) {
+        alerts.push({
+          id: row.id,
+          createdAt: row.created_at,
+          source: row.source,
+          status: row.status,
+          strength: row.strength,
+        });
+      }
+      if (rows.length < 1000) return alerts;
+      offset += rows.length;
     }
   }
 
@@ -218,7 +264,12 @@ export class AlertHistoryService implements OnDestroy {
     if (this.hasPendingWrites) throw new Error('Wait for your alerts to finish syncing before clearing history.');
     this.clearing = true;
     try {
-      await this.api.request('/alerts', 'DELETE', undefined, await this.auth.getToken(uid));
+      await this.api.request(
+        '/rest/v1/alerts?user_id=eq.' + encodeURIComponent(uid),
+        'DELETE',
+        undefined,
+        await this.auth.getToken(uid),
+      );
       if (this.isCurrentUser(uid)) {
         this.savedAlerts.set([]);
         this.saveCache(uid);
@@ -253,7 +304,7 @@ export class AlertHistoryService implements OnDestroy {
 
   private loadCache(uid: string): void {
     try {
-      const saved = localStorage.getItem('motion-alarm-history-' + uid);
+      const saved = localStorage.getItem('motion-alarm-supabase-history-' + uid);
       if (!saved) return;
       const cache = JSON.parse(saved) as { alerts: unknown[]; changes: AlertChange[] };
       if (
@@ -275,7 +326,7 @@ export class AlertHistoryService implements OnDestroy {
     this.pendingCount.set(this.changes.length);
     try {
       localStorage.setItem(
-        'motion-alarm-history-' + uid,
+        'motion-alarm-supabase-history-' + uid,
         JSON.stringify({ alerts: this.savedAlerts(), changes: this.changes }),
       );
     } catch {

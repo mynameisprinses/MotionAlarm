@@ -1,6 +1,6 @@
 import { test, expect } from '@playwright/test';
 
-import { createAccount } from './firebase';
+import { createAccount } from './supabase';
 
 test('registration validates confirmation, restores login, and supports signing back in with visible passwords', async ({
   page,
@@ -17,7 +17,7 @@ test('registration validates confirmation, restores login, and supports signing 
   await page.getByLabel('Confirm password').fill('MotionAlarm123!');
   await page.getByRole('checkbox', { name: 'Show passwords', exact: true }).check();
   const registration = page.waitForResponse(
-    (response) => response.url().endsWith('/auth/register') && response.request().method() === 'POST',
+    (response) => response.url().endsWith('/auth/v1/signup') && response.request().method() === 'POST',
     { timeout: 25_000 },
   );
   await page.getByRole('button', { name: 'Create account', exact: true }).click();
@@ -34,7 +34,8 @@ test('registration validates confirmation, restores login, and supports signing 
   await page.getByLabel('Password', { exact: true }).fill('MotionAlarm123!');
   await page.getByRole('checkbox', { name: 'Show password', exact: true }).check();
   const login = page.waitForResponse(
-    (response) => response.url().endsWith('/auth/login') && response.request().method() === 'POST',
+    (response) =>
+      response.url().includes('/auth/v1/token?grant_type=password') && response.request().method() === 'POST',
     { timeout: 25_000 },
   );
   await page.getByRole('button', { name: 'Log in', exact: true }).last().click();
@@ -54,6 +55,27 @@ test('login reports wrong credentials and duplicate registration', async ({ page
   await page.getByLabel('Confirm password').fill(account.password);
   await page.getByRole('button', { name: 'Create account', exact: true }).click();
   await expect(page.getByRole('alert')).toContainText('already has an account');
+});
+
+test('registration explains required email confirmation and keeps the account signed out', async ({ page }) => {
+  await page.route('**/auth/v1/signup', (route) =>
+    route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify({ user: { id: crypto.randomUUID(), email: 'confirmation@example.com' } }),
+    }),
+  );
+  await page.goto('/login');
+  await page.getByRole('button', { name: 'Register', exact: true }).click();
+  await page.getByLabel('Email', { exact: true }).fill('confirmation@example.com');
+  await page.getByLabel('Password', { exact: true }).fill('MotionAlarm123!');
+  await page.getByLabel('Confirm password').fill('MotionAlarm123!');
+  await page.getByRole('button', { name: 'Create account', exact: true }).click();
+  await expect(page.getByRole('status')).toContainText('Check your email for a confirmation link');
+  await expect(page.getByRole('heading', { name: 'Log in to MotionAlarm' })).toBeVisible();
+  await expect(page.getByLabel('Password', { exact: true })).toHaveValue('');
+  await page.goto('/home');
+  await expect(page).toHaveURL(/\/login$/);
 });
 
 for (const theme of ['light', 'dark'] as const) {

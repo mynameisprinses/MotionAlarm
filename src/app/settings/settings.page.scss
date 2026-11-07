@@ -45,7 +45,6 @@ h1 {
 }
 .intro,
 .active-note,
-.foreground-note,
 .setting p {
   color: var(--muted);
   font-size: 13px;
@@ -95,11 +94,6 @@ ion-toggle {
   font-size: 14px;
   font-weight: 600;
   --track-background: var(--control-border);
-}
-.foreground-note {
-  margin: 16px 0 0;
-  padding-top: 20px;
-  border-top: 1px solid var(--line);
 }
 .error-message {
   margin: 16px 0 0;

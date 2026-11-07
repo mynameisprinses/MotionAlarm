@@ -14,14 +14,18 @@ export class ApiError extends Error {
 
 @Injectable({ providedIn: 'root' })
 export class ApiService {
-  async request<T>(path: string, method = 'GET', body?: unknown, token?: string): Promise<T> {
-    if (!environment.apiBaseUrl)
+  async request<T>(path: string, method = 'GET', body?: unknown, token?: string, prefer?: string): Promise<T> {
+    if (!environment.supabaseUrl || !environment.supabasePublishableKey)
       throw new ApiError(503, 'NOT_CONFIGURED', 'The account service is not configured. Please contact the app owner.');
-    const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+    const headers: Record<string, string> = {
+      'Content-Type': 'application/json',
+      apikey: environment.supabasePublishableKey,
+    };
     if (token) headers['Authorization'] = 'Bearer ' + token;
+    if (prefer) headers['Prefer'] = prefer;
     let response: Response;
     try {
-      response = await fetch(environment.apiBaseUrl + path, {
+      response = await fetch(environment.supabaseUrl + path, {
         method,
         headers,
         body: body === undefined ? undefined : JSON.stringify(body),
@@ -35,9 +39,11 @@ export class ApiService {
       );
     }
     if (response.status === 204) return undefined as T;
+    const text = await response.text();
+    if (!text && response.ok) return undefined as T;
     let data;
     try {
-      data = await response.json();
+      data = JSON.parse(text);
     } catch {
       throw new ApiError(
         502,
@@ -48,8 +54,8 @@ export class ApiService {
     if (!response.ok)
       throw new ApiError(
         response.status,
-        data.error?.code || 'REQUEST_FAILED',
-        data.error?.message || 'The request could not be completed.',
+        data.code || data.error_code || data.error || 'REQUEST_FAILED',
+        data.message || data.msg || data.error_description || 'The request could not be completed.',
       );
     return data as T;
   }
