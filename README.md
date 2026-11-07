@@ -23,7 +23,7 @@ Open `http://localhost:4200`, or use `ionic serve --port 8100`. The web app need
 2. Run `supabase/migrations/20261107024658_create_motion_alarm.sql` in that project's SQL Editor. It creates alert tables, ownership policies, grants, and the atomic upload function.
 3. In **Settings → API Keys**, copy the publishable API key. In **Integrations → Data API**, copy the project URL.
 4. Set `supabaseUrl` and `supabasePublishableKey` in both `src/environments/environment.ts` and `src/environments/environment.prod.ts`. These are public client settings. Administrative keys do not belong in the app.
-5. Enable email/password accounts in Supabase Auth. Configure your actual app URL in Auth's URL configuration for email confirmation links. If email confirmation is enabled, the registration screen asks users to confirm their address before logging in.
+5. In Supabase **Authentication → Sign In / Providers**, enable the Email provider and turn off **Confirm email** so an address such as `demo@example.com` can register. Set the minimum password length to 8 in Auth. The app accepts 8–48 characters at registration.
 
 This version starts with new accounts and account-specific history. It uses separate local session/cache keys and leaves previous saved data untouched.
 

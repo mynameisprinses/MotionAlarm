@@ -35,6 +35,7 @@ const server = createServer(async (request, response) => {
   const url = new URL(request.url, 'http://127.0.0.1:54321');
   if (url.pathname === '/health') return send(200, { fixture: 'supabase-rest' });
   if (request.headers.apikey !== 'sb_publishable_test_only') return send(401, { message: 'Invalid API key' });
+  if (url.pathname === '/auth/v1/settings') return send(200, { mailer_autoconfirm: true });
   let body;
   try {
     let raw = '';
@@ -46,8 +47,8 @@ const server = createServer(async (request, response) => {
 
   if (url.pathname === '/auth/v1/signup' && request.method === 'POST') {
     const email = body.email?.trim().toLowerCase();
-    if (!email || !body.password || body.password.length < 6)
-      return send(400, { code: 'weak_password', msg: 'Use at least 6 characters.' });
+    if (!email || typeof body.password !== 'string' || body.password.length < 8 || body.password.length > 48)
+      return send(400, { code: 'weak_password', msg: 'Enter a password between 8 and 48 characters.' });
     if (accounts.has(email)) return send(422, { code: 'user_already_exists', msg: 'User already registered' });
     const account = { id: randomUUID(), email, password: body.password };
     accounts.set(email, account);

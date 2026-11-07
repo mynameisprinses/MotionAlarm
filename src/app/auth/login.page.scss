@@ -20,13 +20,10 @@ h1 {
   font-size: clamp(24px, 5vw, 30px);
   letter-spacing: -0.7px;
 }
-.intro,
-.field-help {
+.intro {
   color: var(--muted);
   font-size: 13px;
   line-height: 1.7;
-}
-.intro {
   margin: 0 0 24px;
 }
 .account-tabs {
@@ -96,9 +93,6 @@ button:focus-visible {
 button:disabled {
   opacity: 0.6;
   cursor: default;
-}
-.field-help {
-  margin: 6px 0 0;
 }
 ion-button {
   margin: 24px 0 0;

@@ -26,7 +26,9 @@ const response = {
 
 describe('REST login sessions', () => {
   it('explains email confirmation and disabled signups', () => {
-    expect(authErrorMessage(new ApiError(400, 'email_not_confirmed', 'Not confirmed'))).toContain('Confirm your email');
+    expect(authErrorMessage(new ApiError(400, 'email_not_confirmed', 'Not confirmed'))).toContain(
+      'Contact the app owner',
+    );
     expect(authErrorMessage(new ApiError(400, 'signup_disabled', 'Disabled'))).toContain('not enabled');
   });
   beforeEach(() => {
@@ -109,12 +111,32 @@ describe('REST login sessions', () => {
     expect(await auth.getToken('user-b')).toBe('token-b');
   });
 
-  it('keeps registration signed out when email confirmation is required', async () => {
-    apiRequest.mockResolvedValueOnce({ user: response.user });
+  it('avoids sending a signup request when email confirmation is enabled', async () => {
+    apiRequest.mockResolvedValueOnce({ mailer_autoconfirm: false });
     const auth = TestBed.inject(AuthService);
-    expect(await auth.register('a@example.com', 'password')).toBe(false);
+    await expect(auth.register('a@example.com', 'password')).rejects.toMatchObject({
+      code: 'email_confirmation_enabled',
+    });
+    expect(apiRequest.mock.calls).toEqual([['/auth/v1/settings']]);
     expect(auth.user()).toBeNull();
     expect(localStorage.getItem(storageKey)).toBeNull();
+  });
+
+  it.each([7, 49])('rejects a %i-character registration password before contacting Auth', async (length) => {
+    const auth = TestBed.inject(AuthService);
+    await expect(auth.register('demo@example.com', 'a'.repeat(length))).rejects.toMatchObject({
+      code: 'invalid_password_length',
+    });
+    expect(apiRequest).not.toHaveBeenCalled();
+  });
+
+  it.each([8, 48])('registers with an email-shaped identifier and a %i-character password', async (length) => {
+    apiRequest.mockResolvedValueOnce({ mailer_autoconfirm: true });
+    const auth = TestBed.inject(AuthService);
+    const password = 'a'.repeat(length);
+    await auth.register('a@example.com', password);
+    expect(apiRequest).toHaveBeenLastCalledWith('/auth/v1/signup', 'POST', { email: 'a@example.com', password });
+    expect(auth.user()).toEqual(session.user);
   });
 
   it('does not restore a session from the previous account service', () => {

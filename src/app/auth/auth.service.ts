@@ -6,6 +6,9 @@ import { ApiError, ApiService } from '../api/api-request';
 import { NATIVE_ALARM } from '../home/native-alarm';
 import { AlarmSettingsService } from '../settings/alarm-settings.service';
 
+export const MIN_PASSWORD_LENGTH = 8;
+export const MAX_PASSWORD_LENGTH = 48;
+
 export interface AccountUser {
   uid: string;
   email: string;
@@ -53,11 +56,22 @@ export class AuthService {
     this.saveLogin(this.readSession(response));
   }
 
-  async register(email: string, password: string): Promise<boolean> {
+  async register(email: string, password: string): Promise<void> {
+    if (password.length < MIN_PASSWORD_LENGTH || password.length > MAX_PASSWORD_LENGTH) {
+      throw new ApiError(400, 'invalid_password_length', 'Enter a password between 8 and 48 characters.');
+    }
+
+    const settings = await this.api.request<{ mailer_autoconfirm: boolean }>('/auth/v1/settings');
+    if (!settings.mailer_autoconfirm) {
+      throw new ApiError(
+        503,
+        'email_confirmation_enabled',
+        'Registration is unavailable until the app owner turns off email confirmation.',
+      );
+    }
+
     const response = await this.api.request<AuthResponse>('/auth/v1/signup', 'POST', { email: email.trim(), password });
-    if (!response.access_token) return false;
     this.saveLogin(this.readSession(response));
-    return true;
   }
 
   // Refresh expired tokens here so alert functions only need to ask for a token.
@@ -201,7 +215,7 @@ export function authErrorMessage(error: unknown): string {
     case 'email_provider_disabled':
       return 'Email/password accounts are not enabled. Please contact the app owner.';
     case 'email_not_confirmed':
-      return 'Confirm your email address before logging in. Check your inbox for the confirmation link.';
+      return 'This account is awaiting verification. Contact the app owner for help signing in.';
     case 'user_banned':
       return 'This account has been disabled.';
     default:

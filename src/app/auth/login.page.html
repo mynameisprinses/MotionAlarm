@@ -45,12 +45,12 @@
           [placeholder]="mode === 'register' ? 'Create a password' : 'Enter your password'"
           [autocomplete]="mode === 'register' ? 'new-password' : 'current-password'"
           required
-          [attr.minlength]="mode === 'register' ? 6 : null"
+          [attr.minlength]="mode === 'register' ? minPasswordLength : null"
+          [attr.maxlength]="mode === 'register' ? maxPasswordLength : null"
           [(ngModel)]="password"
           [disabled]="busy"
         />
         @if (mode === 'register') {
-        <p class="field-help">Use at least 6 characters.</p>
         <label for="confirmation">Confirm password</label>
         <input
           id="confirmation"
@@ -59,7 +59,8 @@
           placeholder="Re-enter your password"
           autocomplete="new-password"
           required
-          minlength="6"
+          [attr.minlength]="minPasswordLength"
+          [attr.maxlength]="maxPasswordLength"
           [(ngModel)]="confirmation"
           [disabled]="busy"
         />
@@ -74,8 +75,6 @@
       </form>
       @if (error || auth.error()) {
       <p class="error-message" role="alert">{{ error || auth.error() }}</p>
-      } @if (feedback) {
-      <p class="field-help" role="status">{{ feedback }}</p>
       }
     </section>
   </main>

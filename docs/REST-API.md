@@ -10,6 +10,7 @@ Ionic page → Angular service → Supabase REST endpoint → PostgreSQL
 
 | Method | Endpoint | Body |
 | --- | --- | --- |
+| GET | `/auth/v1/settings` | Checks that the project allows registration without email confirmation |
 | POST | `/auth/v1/signup` | `{ email, password }` |
 | POST | `/auth/v1/token?grant_type=password` | `{ email, password }` |
 | POST | `/auth/v1/token?grant_type=refresh_token` | `{ refresh_token }` |
@@ -17,7 +18,7 @@ Ionic page → Angular service → Supabase REST endpoint → PostgreSQL
 
 Successful login returns `access_token`, `refresh_token`, `expires_in`, and `user`. The auth service converts these fields to the app's session structure, remembers the session, and refreshes it before expiry. An account change during refresh cannot overwrite a newer login.
 
-Registration may return a user without a session when email confirmation is required. The app then clears the passwords, returns to login, and displays confirmation instructions. The project owner configures the email provider, confirmation behavior, Site URL, and redirect URLs in Supabase Auth.
+Registration accepts email-shaped identifiers such as `demo@example.com` and passwords of 8–48 characters. The app checks that Supabase's **Confirm email** setting is off before sending signup, then saves the session returned by Auth.
 
 The app requests server logout when online and clears the local session. Network failure does not prevent local sign-out. Account caches remain separate, and sign-out is blocked during monitoring.
 

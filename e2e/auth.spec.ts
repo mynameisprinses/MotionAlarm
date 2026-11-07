@@ -57,12 +57,12 @@ test('login reports wrong credentials and duplicate registration', async ({ page
   await expect(page.getByRole('alert')).toContainText('already has an account');
 });
 
-test('registration explains required email confirmation and keeps the account signed out', async ({ page }) => {
-  await page.route('**/auth/v1/signup', (route) =>
+test('registration stops when Supabase requires email confirmation', async ({ page }) => {
+  await page.route('**/auth/v1/settings', (route) =>
     route.fulfill({
       status: 200,
       contentType: 'application/json',
-      body: JSON.stringify({ user: { id: crypto.randomUUID(), email: 'confirmation@example.com' } }),
+      body: JSON.stringify({ mailer_autoconfirm: false }),
     }),
   );
   await page.goto('/login');
@@ -71,9 +71,8 @@ test('registration explains required email confirmation and keeps the account si
   await page.getByLabel('Password', { exact: true }).fill('MotionAlarm123!');
   await page.getByLabel('Confirm password').fill('MotionAlarm123!');
   await page.getByRole('button', { name: 'Create account', exact: true }).click();
-  await expect(page.getByRole('status')).toContainText('Check your email for a confirmation link');
-  await expect(page.getByRole('heading', { name: 'Log in to MotionAlarm' })).toBeVisible();
-  await expect(page.getByLabel('Password', { exact: true })).toHaveValue('');
+  await expect(page.getByRole('alert')).toContainText('Registration is unavailable');
+  await expect(page.getByRole('heading', { name: 'Create your account' })).toBeVisible();
   await page.goto('/home');
   await expect(page).toHaveURL(/\/login$/);
 });

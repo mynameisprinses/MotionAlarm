@@ -2,7 +2,7 @@ import { ChangeDetectionStrategy, ChangeDetectorRef, Component, inject } from '@
 import { FormsModule } from '@angular/forms';
 import { IonButton, IonContent, NavController } from '@ionic/angular';
 
-import { AuthService, authErrorMessage } from './auth.service';
+import { AuthService, MAX_PASSWORD_LENGTH, MIN_PASSWORD_LENGTH, authErrorMessage } from './auth.service';
 
 @Component({
   selector: 'app-login',
@@ -21,7 +21,8 @@ export class LoginPage {
   showPassword = false;
   busy = false;
   error = '';
-  feedback = '';
+  readonly minPasswordLength = MIN_PASSWORD_LENGTH;
+  readonly maxPasswordLength = MAX_PASSWORD_LENGTH;
   private nav = inject(NavController);
   private changeDetector = inject(ChangeDetectorRef);
 
@@ -39,13 +40,11 @@ export class LoginPage {
     this.confirmation = '';
     this.showPassword = false;
     this.error = '';
-    this.feedback = '';
   }
 
   async submit(): Promise<void> {
     if (this.busy) return;
     this.error = '';
-    this.feedback = '';
     if (this.mode === 'register' && this.password !== this.confirmation) {
       this.error = 'Passwords do not match.';
       return;
@@ -53,12 +52,7 @@ export class LoginPage {
     this.busy = true;
     try {
       if (this.mode === 'register') {
-        const loggedIn = await this.auth.register(this.email, this.password);
-        if (!loggedIn) {
-          this.changeMode('login');
-          this.feedback = 'Check your email for a confirmation link, then return here to log in.';
-          return;
-        }
+        await this.auth.register(this.email, this.password);
       } else {
         await this.auth.login(this.email, this.password);
       }
